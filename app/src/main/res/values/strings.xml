@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Fitness</string>
+
+    <string name="scan_btn">CONNECT</string>
+
+    <string name="not_support_ble">Your device doesn\'t support BLE!</string>
+    <string name="have_to_enable_bt">You have to enable Bluetooth!</string>
+    <string name="bt_enabled">Bluetooth Enabled</string>
+
+    <string name="default_heart_rate">--</string>
+</resources>
