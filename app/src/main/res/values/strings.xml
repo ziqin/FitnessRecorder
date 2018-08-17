@@ -3,9 +3,33 @@
 
     <string name="scan_btn">CONNECT</string>
 
-    <string name="not_support_ble">Your device doesn\'t support BLE!</string>
-    <string name="have_to_enable_bt">You have to enable Bluetooth!</string>
-    <string name="bt_enabled">Bluetooth Enabled</string>
+    <string name="toast_not_support_ble">Your device doesn\'t support BLE!</string>
+    <string name="toast_have_to_enable_bt">You have to enable Bluetooth!</string>
+    <string name="toast_bt_enabled">Bluetooth Enabled</string>
+    <string name="toast_pair_ok">Paired successfully!</string>
+    <string name="toast_pair_fail">Failed to pair!</string>
+    <string name="toast_connect_ok">Connected successfully!</string>
+    <string name="toast_connect_fail">Failed to connect!</string>
 
-    <string name="default_heart_rate">--</string>
+    <string name="default_heart_rate"> </string>
+    <string name="loading_heart_rate">&#8230;</string>
+
+    <string name="btn_pair">PAIR MY BAND</string>
+    <string name="btn_connect">CONNECT MY BAND</string>
+    <string name="btn_pairing">PARING</string>
+    <string name="btn_connecting">CONNECTING</string>
+    <string name="btn_start">START MEASUREMENT</string>
+    <string name="btn_stop">STOP MEASUREMENT</string>
+    <string name="btn_enabling">ENABLING MEASUREMENT</string>
+    <string name="btn_disabling">DISABLING MEASUREMENT</string>
+
+    <string name="label_fitness_recorder">Fitness Recorder</string>
+    <string name="label_pair_band">Pair My Band</string>
+    <string name="label_export_data">Export Data</string>
+
+    <string name="item_pair_band">Pair my band</string>
+    <string name="item_export">Export data</string>
+    <string name="item_scan">Scan</string>
+    <string name="item_stop_scan">Stop Scanning</string>
+
 </resources>

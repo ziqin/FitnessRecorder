@@ -1,5 +1,7 @@
 package in.wangziq.fitnessrecorder.utils;
 
+import android.support.annotation.Nullable;
+
 import java.util.Random;
 
 public final class BytesUtil {
@@ -14,7 +16,8 @@ public final class BytesUtil {
     }
 
     public static String toHexStr(byte[] data) {
-        if (data == null) return "";
+//        if (data == null) return "";
+        if (data == null) return null;
 
         StringBuilder str = new StringBuilder(data.length);
         for (byte b: data)
@@ -22,7 +25,9 @@ public final class BytesUtil {
         return str.toString();
     }
 
-    public static byte[] hexStrToBytes(String hex) {
+    public static byte[] hexStrToBytes(@Nullable String hex) {
+        if (hex == null) return null;
+
         final int LENGTH = hex.length();
         if (LENGTH % 2 != 0) throw new IllegalArgumentException("String length should be even!");
         final int HALF_LENGTH = LENGTH / 2;

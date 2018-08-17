@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/recycler_item_selector"
+    android:clickable="true"
+    android:focusable="true"
+    android:padding="16dp"
+    android:paddingEnd="24dp"
+    android:paddingStart="24dp" >
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_margin="4dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:contentDescription="Bluetooth device"
+        app:srcCompat="@drawable/ic_bluetooth_black_64dp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/devices_name_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+            tools:text="Device Name" />
+
+        <TextView
+            android:id="@+id/devices_address_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            tools:text="A1:B2:C3:D4:E5:F6" />
+    </LinearLayout>
+
+</LinearLayout>
