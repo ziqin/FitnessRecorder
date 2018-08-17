@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Fitness</string>
+    <string name="app_name">FitRecord</string>
 
     <string name="scan_btn">CONNECT</string>
 
@@ -10,7 +10,11 @@
     <string name="toast_pair_fail">Failed to pair!</string>
     <string name="toast_connect_ok">Connected successfully!</string>
     <string name="toast_connect_fail">Failed to connect!</string>
+    <string name="toast_export_state_fail">Failed to export database: external storage unavailable!</string>
+    <string name="toast_export_copy_fail">Failed to export database: error occurred when copying the file!</string>
+    <string name="toast_export_succeed">Database exported successfully!</string>
 
+    <string name="export_tip">Your data will be exported to \n%1$s</string>
     <string name="default_heart_rate"> </string>
     <string name="loading_heart_rate">&#8230;</string>
 
@@ -22,6 +26,7 @@
     <string name="btn_stop">STOP MEASUREMENT</string>
     <string name="btn_enabling">ENABLING MEASUREMENT</string>
     <string name="btn_disabling">DISABLING MEASUREMENT</string>
+    <string name="btn_export">EXPORT DATA</string>
 
     <string name="label_fitness_recorder">Fitness Recorder</string>
     <string name="label_pair_band">Pair My Band</string>

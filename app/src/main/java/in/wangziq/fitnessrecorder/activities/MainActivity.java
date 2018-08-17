@@ -170,16 +170,14 @@ public final class MainActivity extends AppCompatActivity {
     private void requestStartHeartRateMeasure() {
         mButton.setText(R.string.btn_enabling);
         mButton.setEnabled(false);
-        Intent i = new Intent(this, CommService.class).setAction(Constants.Action.START_HEART_RATE);
-        startService(i);
+        CommService.startActionStartHeartRateMeasure(this);
         // TODO: request + bind stop listener
     }
 
     private void requestStopHeartRateMeasure() {
-        Intent i = new Intent(this, CommService.class).setAction(Constants.Action.STOP_HEART_RATE);
-        startService(i);
         mButton.setText(R.string.btn_disabling);
         mButton.setEnabled(false);
+        CommService.startActionStopHeartRateMeasure(this);
     }
 
     @Override

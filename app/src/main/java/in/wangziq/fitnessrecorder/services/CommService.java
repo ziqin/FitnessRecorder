@@ -11,6 +11,7 @@ import android.util.Log;
 import in.wangziq.fitnessrecorder.config.Constants;
 import in.wangziq.fitnessrecorder.hardware.BandState;
 import in.wangziq.fitnessrecorder.hardware.MiBand2;
+import in.wangziq.fitnessrecorder.persistance.DbTool;
 import in.wangziq.fitnessrecorder.utils.BytesUtil;
 
 public final class CommService extends Service {
@@ -20,6 +21,7 @@ public final class CommService extends Service {
     private MiBand2 mBand;
     private Thread mWorkThread;
     private SharedPreferences mSettings;
+    private DbTool mDatabase;
 
     @Override
     public void onCreate() {
@@ -27,6 +29,7 @@ public final class CommService extends Service {
         Log.i(TAG, "onCreate");
         mSettings = getSharedPreferences(Constants.Settings.DEVICE, Context.MODE_PRIVATE);
         mBand = loadBandFromSettings();
+        mDatabase = new DbTool(this);
     }
 
     @Override
@@ -159,7 +162,8 @@ public final class CommService extends Service {
             boolean success = false;
             if (!mBand.getState().isMeasuringHeartRate()) {
                 success = mBand.startMeasureHeartRate(heartRate -> {
-                    // TODO: store in database
+                    mDatabase.insertHeartRate(heartRate);
+
                     Intent i = new Intent(Constants.Action.BROADCAST_HEART_RATE)
                             .putExtra(Constants.Extra.HEART_RATE, heartRate);
                     LocalBroadcastManager.getInstance(this).sendBroadcast(i);
@@ -224,6 +228,16 @@ public final class CommService extends Service {
 
     public static void startActionDisconnect(Context context) {
         Intent i = new Intent(context, CommService.class).setAction(Constants.Action.DISCONNECT);
+        context.startService(i);
+    }
+
+    public static void startActionStartHeartRateMeasure(Context context) {
+        Intent i = new Intent(context, CommService.class).setAction(Constants.Action.START_HEART_RATE);
+        context.startService(i);
+    }
+
+    public static void startActionStopHeartRateMeasure(Context context) {
+        Intent i = new Intent(context, CommService.class).setAction(Constants.Action.STOP_HEART_RATE);
         context.startService(i);
     }
 }

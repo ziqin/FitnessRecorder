@@ -31,6 +31,7 @@ dependencies {
 
     implementation 'com.annimon:stream:1.2.0'
     implementation 'com.clj.fastble:FastBleLib:2.3.2'
+    implementation 'commons-io:commons-io:2.6'
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
