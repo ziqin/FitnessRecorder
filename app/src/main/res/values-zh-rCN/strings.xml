@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">怦然心动</string>
+    <string name="toast_not_support_ble">您的设备不支持低功耗蓝牙！</string>
+    <string name="toast_have_to_enable_bt">您必须打开蓝牙</string>
+    <string name="toast_bt_enabled">成功打开蓝牙</string>
+    <string name="toast_pair_ok">配对成功！</string>
+    <string name="toast_pair_fail">配对失败！</string>
+    <string name="toast_connect_ok">连接成功！</string>
+    <string name="toast_connect_fail">连接失败！</string>
+    <string name="toast_export_state_fail">数据导出失败：外置存储用不了啊 :(</string>
+    <string name="toast_export_copy_fail">数据导出失败：复制文件时出错了 :(</string>
+    <string name="toast_export_succeed">数据库导出成功！</string>
+    <string name="export_tip">您的数据会被导出到\n%1$s</string>
+    <string name="default_heart_rate">" "</string>
+    <string name="loading_heart_rate">...</string>
+    <string name="btn_pair">配对手环</string>
+    <string name="btn_connect">连接手环</string>
+    <string name="btn_pairing">正在配对</string>
+    <string name="btn_connecting">正在连接</string>
+    <string name="btn_start">开始测量</string>
+    <string name="btn_stop">停止测量</string>
+    <string name="btn_enabling">测量启动中</string>
+    <string name="btn_disabling">测量停止中</string>
+    <string name="btn_export">导出数据</string>
+    <string name="label_fitness_recorder">健康记录仪</string>
+    <string name="label_pair_band">手环配对</string>
+    <string name="label_export_data">数据导出</string>
+    <string name="item_pair_band">配对手环</string>
+    <string name="item_export">导出数据</string>
+    <string name="item_scan">扫描</string>
+    <string name="item_stop_scan">停止扫描</string>
+</resources>

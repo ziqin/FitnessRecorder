@@ -1,7 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FitRecord</string>
-
-    <string name="scan_btn">CONNECT</string>
 
     <string name="toast_not_support_ble">Your device doesn\'t support BLE!</string>
     <string name="toast_have_to_enable_bt">You have to enable Bluetooth!</string>
@@ -14,7 +13,7 @@
     <string name="toast_export_copy_fail">Failed to export database: error occurred when copying the file!</string>
     <string name="toast_export_succeed">Database exported successfully!</string>
 
-    <string name="export_tip">Your data will be exported to \n%1$s</string>
+    <string name="export_tip">Your data will be exported to\n%1$s</string>
     <string name="default_heart_rate"> </string>
     <string name="loading_heart_rate">&#8230;</string>
 
