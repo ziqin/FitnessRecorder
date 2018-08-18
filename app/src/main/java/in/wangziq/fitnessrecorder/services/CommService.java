@@ -1,14 +1,23 @@
 package in.wangziq.fitnessrecorder.services;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import in.wangziq.fitnessrecorder.R;
+import in.wangziq.fitnessrecorder.activities.MainActivity;
 import in.wangziq.fitnessrecorder.config.Constants;
 import in.wangziq.fitnessrecorder.hardware.BandState;
 import in.wangziq.fitnessrecorder.hardware.MiBand2;
@@ -20,6 +29,9 @@ public final class CommService extends Service {
     private static final String TAG = CommService.class.getSimpleName();
 
     private static final int WAKELOCK_TIMEOUT = 36000000; // 10 hours
+
+    private static final String ONGOING_CHANNEL = "ONGOING";
+    private static final int HR_MEASURE_NOTIFY = 1;
 
     private MiBand2 mBand;
     private Thread mWorkThread;
@@ -41,6 +53,7 @@ public final class CommService extends Service {
         super.onDestroy();
         Log.i(TAG, "onDestroy");
         disconnect();
+        stopForeground(true);
     }
 
     @Override
@@ -167,6 +180,8 @@ public final class CommService extends Service {
         if (powerMgr != null) mWakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "KeepHeartBeat");
         mWakeLock.acquire(WAKELOCK_TIMEOUT);
 
+        foregroundNotify();
+
         mWorkThread = new Thread(() -> {
             boolean success = false;
             if (!mBand.getState().isMeasuringHeartRate()) {
@@ -193,6 +208,9 @@ public final class CommService extends Service {
             Log.w(TAG, "startHeartRateMeasure: the last thread is still working, current task canceled");
             return;
         }
+
+        stopForeground(true);
+
         mWorkThread = new Thread(() -> {
             mBand.stopMeasureHeartRate();
             // FIXME: current implementation: always return OK
@@ -217,6 +235,31 @@ public final class CommService extends Service {
             // TODO: reconnect for several times
         });
         return miBand;
+    }
+
+    private void foregroundNotify() {
+        int IMPORTANCE = 3;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            IMPORTANCE = NotificationManager.IMPORTANCE_HIGH;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(ONGOING_CHANNEL, "Ongoing", IMPORTANCE);
+            NotificationManager notifyMgr = getSystemService(NotificationManager.class);
+            if (notifyMgr != null) notifyMgr.createNotificationChannel(channel);
+        }
+        Intent i = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, i, 0);
+        Notification notification = new NotificationCompat.Builder(this, ONGOING_CHANNEL)
+                .setSmallIcon(R.drawable.ic_heart_red_64dp)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_heart_red_64dp))
+                .setContentTitle(getString(R.string.label_fitness_recorder))
+                .setContentText(getString(R.string.notify_measuring))
+                .setContentIntent(pendingIntent)
+                .setPriority(IMPORTANCE)
+                .setWhen(System.currentTimeMillis())
+                .setOngoing(true)
+                .build();
+        startForeground(HR_MEASURE_NOTIFY, notification);
     }
 
     public static void startActionStateUpdate(Context context) {

@@ -36,4 +36,6 @@
     <string name="item_scan">Scan</string>
     <string name="item_stop_scan">Stop Scanning</string>
 
+    <string name="notify_measuring">Heart rate measuring</string>
+
 </resources>

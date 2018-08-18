@@ -153,6 +153,7 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void prepareStartHeartRateMeasurement() {
+        clearShownText();
         mButton.setText(R.string.btn_start);
         mButton.setEnabled(true);
         mButton.setOnClickListener(view -> requestStartHeartRateMeasure());
@@ -161,13 +162,13 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void prepareStopHeartRateMeasurement() {
-        mHeartRateText.setText(R.string.loading_heart_rate);
         mButton.setText(R.string.btn_stop);
         mButton.setEnabled(true);
         mButton.setOnClickListener(view -> requestStopHeartRateMeasure());
     }
 
     private void requestStartHeartRateMeasure() {
+        mHeartRateText.setText(R.string.loading_heart_rate);
         mButton.setText(R.string.btn_enabling);
         mButton.setEnabled(false);
         CommService.startActionStartHeartRateMeasure(this);
