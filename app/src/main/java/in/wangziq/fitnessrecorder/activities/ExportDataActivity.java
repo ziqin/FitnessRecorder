@@ -17,7 +17,6 @@ import java.util.Date;
 
 import in.wangziq.fitnessrecorder.R;
 import in.wangziq.fitnessrecorder.persistance.FitnessDbHelper;
-import in.wangziq.fitnessrecorder.services.CommService;
 
 public final class ExportDataActivity extends AppCompatActivity {
 
@@ -30,10 +29,10 @@ public final class ExportDataActivity extends AppCompatActivity {
         setContentView(R.layout.activity_export_data);
 
         File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        mAppDir = new File(downloadDir, getResources().getString(R.string.app_name));
+        mAppDir = new File(downloadDir, getString(R.string.app_name));
 
         TextView noticeText = findViewById(R.id.export_tip);
-        noticeText.setText(getResources().getString(R.string.export_tip, mAppDir.toString()));
+        noticeText.setText(getString(R.string.export_tip, mAppDir.toString()));
 
         Button exportButton = findViewById(R.id.btn_export);
         exportButton.setOnClickListener(view -> new Thread(this::saveDbFile).run());
@@ -48,7 +47,7 @@ public final class ExportDataActivity extends AppCompatActivity {
             srcPath = getDatabasePath(FitnessDbHelper.DB_NAME);
             try {
                 FileUtils.copyFile(srcPath, destPath, true);
-                String successMsg = getResources().getString(R.string.toast_export_succeed) + destPath;
+                String successMsg = getString(R.string.toast_export_succeed) + destPath;
                 Toast.makeText(this, successMsg, Toast.LENGTH_SHORT).show();
             } catch (IOException e) {
                 Log.e(TAG, "saveDbFile: failed to copy " + srcPath + " to " + destPath, e);

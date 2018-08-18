@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -18,10 +19,13 @@ public final class CommService extends Service {
 
     private static final String TAG = CommService.class.getSimpleName();
 
+    private static final int WAKELOCK_TIMEOUT = 36000000; // 10 hours
+
     private MiBand2 mBand;
     private Thread mWorkThread;
     private SharedPreferences mSettings;
     private DbTool mDatabase;
+    private PowerManager.WakeLock mWakeLock;
 
     @Override
     public void onCreate() {
@@ -158,6 +162,11 @@ public final class CommService extends Service {
             Log.w(TAG, "startHeartRateMeasure: the last thread is still working, current task canceled");
             return;
         }
+
+        PowerManager powerMgr = (PowerManager) getSystemService(POWER_SERVICE);
+        if (powerMgr != null) mWakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "KeepHeartBeat");
+        mWakeLock.acquire(WAKELOCK_TIMEOUT);
+
         mWorkThread = new Thread(() -> {
             boolean success = false;
             if (!mBand.getState().isMeasuringHeartRate()) {
@@ -178,6 +187,8 @@ public final class CommService extends Service {
     }
 
     private void stopHeartRateMeasure() {
+        if (mWakeLock != null) mWakeLock.release();
+
         if (mWorkThread != null && mWorkThread.isAlive()) {
             Log.w(TAG, "startHeartRateMeasure: the last thread is still working, current task canceled");
             return;

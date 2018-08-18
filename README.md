@@ -11,7 +11,6 @@ Please forgive the shortcomings in this project, which are probably caused by my
 
 ## Remark
 
-- For longtime measurement, __DO ALLOW__ the app to run in background. (You may need to enable this permission manually, especially for highly customized Android OS like Flyme and MIUI, otherwise the background service may be killed by the system without any notification.)
 - It is suggested to "stop measurement" before exporting data.
 
 ## Acknowledgement
