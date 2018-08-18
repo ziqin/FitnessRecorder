@@ -16,7 +16,7 @@ Please forgive the shortcomings in this project, which are probably caused by my
 
 ## Acknowledgement
 
-- Leo Soares, [Mi Band 2, Part 1: Authentication](https://leojrfs.github.io/writing/miband2-part1-auth/)
-- Volodymyr Shymanskyy, [Mi Band 2 python test](Mi Band 2 python test)
-- Andrey Nikishaev, [How I hacked my Xiaomi MiBand 2 fitness tracker—a step-by-step Linux guide](https://medium.com/@a.nikishaev/how-i-hacked-xiaomi-miband-2-to-control-it-from-linux-a5bd2f36d3ad)
-- 陈利健, [Android BLE开发详解和FastBle源码解析](https://www.jianshu.com/p/795bb0a08beb)
+- Leo Soares, [_Mi Band 2, Part 1: Authentication_](https://leojrfs.github.io/writing/miband2-part1-auth/)
+- Volodymyr Shymanskyy, [_Mi Band 2 python test_](https://github.com/vshymanskyy/miband2-python-test)
+- Andrey Nikishaev, [_How I hacked my Xiaomi MiBand 2 fitness tracker—a step-by-step Linux guide_](https://medium.com/@a.nikishaev/how-i-hacked-xiaomi-miband-2-to-control-it-from-linux-a5bd2f36d3ad)
+- 陈利健, [_Android BLE开发详解和FastBle源码解析_](https://www.jianshu.com/p/795bb0a08beb)
