@@ -1,6 +1,10 @@
 package in.wangziq.fitnessrecorder.activities;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,6 +25,8 @@ import in.wangziq.fitnessrecorder.persistance.FitnessDbHelper;
 public final class ExportDataActivity extends AppCompatActivity {
 
     private static final String TAG = ExportDataActivity.class.getSimpleName();
+    private static final int WRITE_EXTERNAL_REQUEST = 1;
+
     private File mAppDir;
 
     @Override
@@ -35,7 +41,23 @@ public final class ExportDataActivity extends AppCompatActivity {
         noticeText.setText(getString(R.string.export_tip, mAppDir.toString()));
 
         Button exportButton = findViewById(R.id.btn_export);
-        exportButton.setOnClickListener(view -> new Thread(this::saveDbFile).run());
+        exportButton.setOnClickListener(view -> new Thread(this::requestWriteExternalPermissionAndExport).run());
+    }
+
+    private void requestWriteExternalPermissionAndExport() {
+        final String PERMISSION = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+        if (ContextCompat.checkSelfPermission(this, PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, PERMISSION)) {
+                Toast.makeText(this, R.string.toast_need_write_external, Toast.LENGTH_SHORT).show();
+                Log.i(TAG, "requestWriteExternalPermission: denied in the past");
+            } else {
+                ActivityCompat.requestPermissions(this, new String[] {PERMISSION}, WRITE_EXTERNAL_REQUEST);
+                Log.i(TAG, "requestWriteExternalPermission: requesting");
+            }
+        } else {
+            Log.i(TAG, "requestLocationPermissionAndScanBt: permission already granted");
+            saveDbFile();
+        }
     }
 
     // TODO: use an intentService to copy files

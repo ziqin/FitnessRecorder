@@ -1,9 +1,13 @@
 package in.wangziq.fitnessrecorder.activities;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -35,7 +39,7 @@ import in.wangziq.fitnessrecorder.services.CommService;
 public final class ScanBandActivity extends AppCompatActivity {
 
     private static final String TAG = ScanBandActivity.class.getSimpleName();
-
+    private static final int LOCATION_PERMISSION_REQUEST = 1;
     private static final int SCAN_TIMEOUT = 10 * 1000;
 
     private DevicesInfoAdapter mDevicesInfoAdapter;
@@ -53,7 +57,9 @@ public final class ScanBandActivity extends AppCompatActivity {
         devicesRecyclerView.setAdapter(mDevicesInfoAdapter);
 
         CommService.startActionDisconnect(this);
-        new Handler().postDelayed(this::bleScan, 666);
+//        new Handler().postDelayed(this::bleScan, 666);
+//        requestLocationPermissionAndScanBt();
+        new Handler().postDelayed(this::requestLocationPermissionAndScanBt, 500);
     }
 
     @Override
@@ -74,10 +80,44 @@ public final class ScanBandActivity extends AppCompatActivity {
         mScanMenuItem = menu.findItem(R.id.item_scan);
         mScanMenuItem.setOnMenuItemClickListener(menuItem -> {
             if (bleManager.getScanSate() == BleScanState.STATE_SCANNING) bleManager.cancelScan();
-            else bleScan();
+            else requestLocationPermissionAndScanBt();
             return true;
         });
         return ans;
+    }
+
+    private void requestLocationPermissionAndScanBt() {
+        final String PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION;
+        if (ContextCompat.checkSelfPermission(this, PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, PERMISSION)) {
+                Toast.makeText(this, R.string.toast_need_location_permission, Toast.LENGTH_SHORT).show();
+                Log.i(TAG, "requestLocationPermissionAndScanBt: denied in the past");
+            } else {
+                ActivityCompat.requestPermissions(this, new String[] {PERMISSION}, LOCATION_PERMISSION_REQUEST);
+                Log.i(TAG, "requestLocationPermissionAndScanBt: requesting");
+            }
+        } else {
+            Log.i(TAG, "requestLocationPermissionAndScanBt: permission already granted");
+            bleScan();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case LOCATION_PERMISSION_REQUEST:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(TAG, "onRequestPermissionsResult: location permission granted");
+//                    bleScan();
+                } else {
+                    Log.i(TAG, "onRequestPermissionsResult: location permission denied");
+                    Toast.makeText(this, R.string.toast_need_location_permission, Toast.LENGTH_SHORT).show();
+                }
+                break;
+            default:
+                Log.i(TAG, "onRequestPermissionsResult: unknown request: " + requestCode);
+        }
     }
 
     private void bleScan() {

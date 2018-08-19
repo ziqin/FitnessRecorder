@@ -12,6 +12,8 @@
     <string name="toast_export_state_fail">Failed to export database: external storage unavailable!</string>
     <string name="toast_export_copy_fail">Failed to export database: error occurred when copying the file!</string>
     <string name="toast_export_succeed">Database exported successfully!</string>
+    <string name="toast_need_location_permission">Location service permission is required for scanning MI Band!</string>
+    <string name="toast_need_write_external">To export data, writing external storage is required!</string>
 
     <string name="export_tip">Your data will be exported to\n%1$s</string>
     <string name="default_heart_rate"> </string>
