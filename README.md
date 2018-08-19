@@ -5,12 +5,14 @@ An Android application for reading heart rates from MI Band 2.
 ## Current Features
 
 - Read realtime heart rate data from MI Band 2
-- Store and export data (Exported database file can be opened by SQLite clients like [SQLite Browser](https://sqlitebrowser.org/), [DataGrip](https://www.jetbrains.com/datagrip/), etc.)
+- Store and export data
+  - Exported database file (`*.db`) can be opened by SQLite clients like [SQLite Studio](https://sqlitestudio.pl/)
 
 Please forgive the shortcomings in this project, which are probably caused by my lack of Android development knowledge and experience currently. Suggestions and contribution for improvements are certainly welcome.
 
 ## Remark
 
+- Please allow the app to run in background for longtime measurement. (You may need to permit it manually, especially if you are using highly customized Android OS like MIUI, Flyme, etc.)
 - It is suggested to "stop measurement" before exporting data.
 
 ## Acknowledgement
