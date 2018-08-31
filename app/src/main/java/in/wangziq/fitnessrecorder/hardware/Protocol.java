@@ -19,7 +19,8 @@ public final class Protocol {
 
     public final static class Characteristic {
         public final static String HZ                  = String.format(BASE2, 0x0002);
-        public final static String SENSOR              = String.format(BASE2, 0x0001);
+        public final static String SENSOR_CONTROL      = String.format(BASE2, 0x0001);
+        public final static String SENSOR_DATA         = String.format(BASE2, 0x0002);
         public final static String AUTH                = String.format(BASE2, 0x0009);
         public final static String BATTERY             = String.format(BASE2, 0x0006);
         public final static String STEPS               = String.format(BASE2, 0x0007);
@@ -59,6 +60,10 @@ public final class Protocol {
     public static final byte[] HEART_START_MANUAL       = {0x15, 0x02, 0x01};
     public static final byte[] HEART_KEEP_ALIVE         = {0x16};
 
-    public static final int HEART_KEEP_ALIVE_PERIOD = 12000;
+    public static final byte[] ACCELERATION_INIT = {0x01, 0x01, 0x19}; // 0x01, 0x02, 0x19 (heart rate) / 0x01, 0x03, 0x19
+    public static final byte[] ACCELERATION_START = {0x02};
+    public static final byte[] ACCELERATION_STOP = {0x03};  // or 0x02
+
+    public static final int HEART_KEEP_ALIVE_PERIOD = 10000; // 10 s
 
 }

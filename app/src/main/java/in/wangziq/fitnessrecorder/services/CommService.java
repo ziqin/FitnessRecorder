@@ -34,7 +34,7 @@ public final class CommService extends Service {
     private static final int HR_MEASURE_NOTIFY = 1;
 
     private MiBand2 mBand;
-    private Thread mWorkThread;
+    private Thread mHeartRateWorkThread, mAccelerationWorkThread;
     private SharedPreferences mSettings;
     private DbTool mDatabase;
     private PowerManager.WakeLock mWakeLock;
@@ -88,6 +88,12 @@ public final class CommService extends Service {
             case Constants.Action.STOP_HEART_RATE:
                 stopHeartRateMeasure();
                 break;
+            case Constants.Action.START_ACCELERATION:
+                startAccelerationMeasure();
+                break;
+            case Constants.Action.STOP_ACCELERATION:
+                stopAccelerationMeasure();
+                break;
             default:
                 Log.i(TAG, "onStartCommand: Unknown action: " + action);
         }
@@ -119,13 +125,13 @@ public final class CommService extends Service {
     }
 
     private void pairAndConnect(String macAddress) {
-        if (mWorkThread != null && mWorkThread.isAlive()) {
+        if (mHeartRateWorkThread != null && mHeartRateWorkThread.isAlive()) {
             Log.i(TAG, "pairAndConnect: the last thread is still working, current task canceled");
             return;
         }
         disconnect();
         mBand = createMiBandInstanceWithCallback(macAddress, null);
-        mWorkThread = new Thread(() -> {
+        mHeartRateWorkThread = new Thread(() -> {
             boolean success = mBand.connect(true);
             Intent response = new Intent(Constants.Action.PAIR);
             if (success) {
@@ -140,17 +146,17 @@ public final class CommService extends Service {
                 response.putExtra(Constants.Extra.STATUS, Constants.Status.FAILED);
             }
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
-            mWorkThread = null;
+            mHeartRateWorkThread = null;
         });
-        mWorkThread.start();
+        mHeartRateWorkThread.start();
     }
 
     private void connect() {
-        if (mWorkThread != null && mWorkThread.isAlive()) {
+        if (mHeartRateWorkThread != null && mHeartRateWorkThread.isAlive()) {
             Log.w(TAG, "pairAndConnect: the last thread is still working, current task canceled");
             return;
         }
-        mWorkThread = new Thread(() -> {
+        mHeartRateWorkThread = new Thread(() -> {
             boolean success = mBand.connect(false);
             Intent response = new Intent(Constants.Action.CONNECT);
             if (success) {
@@ -161,9 +167,9 @@ public final class CommService extends Service {
                 response.putExtra(Constants.Extra.STATUS, Constants.Status.FAILED);
             }
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
-            mWorkThread = null;
+            mHeartRateWorkThread = null;
         });
-        mWorkThread.start();
+        mHeartRateWorkThread.start();
     }
 
     private void disconnect() {
@@ -171,7 +177,7 @@ public final class CommService extends Service {
     }
 
     private void startHeartRateMeasure() {
-        if (mWorkThread != null && mWorkThread.isAlive()) {
+        if (mHeartRateWorkThread != null && mHeartRateWorkThread.isAlive()) {
             Log.w(TAG, "startHeartRateMeasure: the last thread is still working, current task canceled");
             return;
         }
@@ -182,7 +188,7 @@ public final class CommService extends Service {
 
         foregroundNotify();
 
-        mWorkThread = new Thread(() -> {
+        mHeartRateWorkThread = new Thread(() -> {
             boolean success = false;
             if (!mBand.getState().isMeasuringHeartRate()) {
                 success = mBand.startMeasureHeartRate(heartRate -> {
@@ -196,29 +202,69 @@ public final class CommService extends Service {
             Intent response = new Intent(Constants.Action.START_HEART_RATE)
                     .putExtra(Constants.Extra.STATE, success ? Constants.Status.OK : Constants.Status.FAILED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
-            mWorkThread = null;
+            mHeartRateWorkThread = null;
         });
-        mWorkThread.start();
+        mHeartRateWorkThread.start();
     }
 
     private void stopHeartRateMeasure() {
         if (mWakeLock != null) mWakeLock.release();
 
-        if (mWorkThread != null && mWorkThread.isAlive()) {
+        if (mHeartRateWorkThread != null && mHeartRateWorkThread.isAlive()) {
             Log.w(TAG, "startHeartRateMeasure: the last thread is still working, current task canceled");
             return;
         }
 
         stopForeground(true);
 
-        mWorkThread = new Thread(() -> {
+        mHeartRateWorkThread = new Thread(() -> {
             mBand.stopMeasureHeartRate();
             // FIXME: current implementation: always return OK
             Intent response = new Intent(Constants.Action.STOP_HEART_RATE).putExtra(Constants.Extra.STATE, Constants.Status.OK);
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
-            mWorkThread = null;
+            mHeartRateWorkThread = null;
         });
-        mWorkThread.start();
+        mHeartRateWorkThread.start();
+    }
+
+    // TODO: to be refactored
+    private void startAccelerationMeasure() {
+        if (mAccelerationWorkThread != null && mAccelerationWorkThread.isAlive()) {
+            Log.w(TAG, "startAccelerationMeasure: the last thread is still working, current task canceled");
+            return;
+        }
+        foregroundNotify();
+        mAccelerationWorkThread = new Thread(() -> {
+            boolean success;
+            success = mBand.startMeasureAcceleration((x, y, z) -> {
+                Intent i = new Intent(Constants.Action.BROADCAST_ACCELERATION)
+                        .putExtra(Constants.Extra.ACCELERATION_X, x)
+                        .putExtra(Constants.Extra.ACCELERATION_Y, y)
+                        .putExtra(Constants.Extra.ACCELERATION_Z, z);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(i);
+            });
+            Intent response = new Intent(Constants.Action.START_ACCELERATION)
+                    .putExtra(Constants.Extra.STATE, success ? Constants.Status.OK : Constants.Status.FAILED);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(response);
+            mAccelerationWorkThread = null;
+        });
+        mAccelerationWorkThread.start();
+    }
+
+    private void stopAccelerationMeasure() {
+        // TODO: release lock
+        if (mAccelerationWorkThread != null && mAccelerationWorkThread.isAlive()) {
+            Log.w(TAG, "stopAccelerationMeasure: the last thread is still working, current task canceled");
+            return;
+        }
+
+        stopForeground(true);
+
+        mAccelerationWorkThread = new Thread(() -> {
+            mBand.stopMeasureAcceleration();
+            mAccelerationWorkThread = null;
+        });
+        mAccelerationWorkThread.start();
     }
 
     private MiBand2 loadBandFromSettings() {

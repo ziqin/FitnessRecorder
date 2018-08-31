@@ -12,6 +12,9 @@ public final class Constants {
         public static final String START_HEART_RATE = BASE + ".services.action.START_HEART_RATE";
         public static final String STOP_HEART_RATE = BASE + ".services.action.STOP_HEART_RATE";
         public static final String BROADCAST_HEART_RATE = BASE + ".services.action.BROADCAST_HEART_RATE";
+        public static final String START_ACCELERATION = BASE + ".services.action.START_ACCELERATION";
+        public static final String STOP_ACCELERATION = BASE + ".services.action.STOP_ACCELERATION";
+        public static final String BROADCAST_ACCELERATION = BASE + ".services.action.BROADCAST_ACCELERATION";
     }
 
     public static final class Extra {
@@ -20,6 +23,9 @@ public final class Constants {
         public static final String STATE = "extra.data.STATE";
         public static final String HEART_RATE = "extra.data.HEART_RATE";
         public static final String STATUS = "extra.response.STATUS";
+        public static final String ACCELERATION_X = "extra.data.acceleration_x";
+        public static final String ACCELERATION_Y = "extra.data.acceleration_y";
+        public static final String ACCELERATION_Z = "extra.data.acceleration_z";
     }
 
     public static final class Status {

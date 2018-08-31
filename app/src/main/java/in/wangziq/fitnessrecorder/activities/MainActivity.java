@@ -34,7 +34,7 @@ public final class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_SCAN_BAND = 2;
 
-    private Button mButton;
+    private Button mButton, mAccelerationButton;
     private TextView mHeartRateText, mTimeText;
 
     @Override
@@ -43,12 +43,17 @@ public final class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mButton = findViewById(R.id.btn);
+        mAccelerationButton = findViewById(R.id.acceleration_btn);
         mHeartRateText = findViewById(R.id.heart_rate_text);
         mTimeText = findViewById(R.id.time_text);
 
         initBle();
         registerBroadcast();
         CommService.startActionStateUpdate(this);
+
+        mAccelerationButton.setOnClickListener(view -> requestStartAccelerationMeasure());
+        Button mStopAccelerationButton = findViewById(R.id.stop_acceleration_btn);
+        mStopAccelerationButton.setOnClickListener(view -> requestStopAccelerationMeasure());
     }
 
     @Override
@@ -83,6 +88,9 @@ public final class MainActivity extends AppCompatActivity {
         broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.START_HEART_RATE));
         broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.STOP_HEART_RATE));
         broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.BROADCAST_HEART_RATE));
+//        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.START_ACCELERATION));
+//        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.STOP_ACCELERATION));
+        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.BROADCAST_ACCELERATION));
         Log.i(TAG, "registered broadcast receiver");
     }
 
@@ -181,6 +189,16 @@ public final class MainActivity extends AppCompatActivity {
         CommService.startActionStopHeartRateMeasure(this);
     }
 
+    private void requestStartAccelerationMeasure() {
+        Intent i = new Intent(this, CommService.class).setAction(Constants.Action.START_ACCELERATION);
+        startService(i);
+    }
+
+    private void requestStopAccelerationMeasure() {
+        Intent i = new Intent(this, CommService.class).setAction(Constants.Action.STOP_ACCELERATION);
+        startService(i);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         switch (requestCode) {
@@ -264,6 +282,13 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void handleAccelerationBroadcast(Intent data) {
+        float x = data.getFloatExtra(Constants.Extra.ACCELERATION_X, Float.NaN);
+        float y = data.getFloatExtra(Constants.Extra.ACCELERATION_Y, Float.NaN);
+        float z = data.getFloatExtra(Constants.Extra.ACCELERATION_Z, Float.NaN);
+        Log.i(TAG, String.format("handleAccelerationBroadcast: x=%.3f, y=%.3f, z=%.3f", x, y, z));
+    }
+
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -287,6 +312,9 @@ public final class MainActivity extends AppCompatActivity {
                     break;
                 case Constants.Action.BROADCAST_HEART_RATE:
                     handleHeartRateBroadcast(intent);
+                    break;
+                case Constants.Action.BROADCAST_ACCELERATION:
+                    handleAccelerationBroadcast(intent);
                     break;
                 default: Log.i(TAG, "onReceive: Unknown action: " + action);
             }

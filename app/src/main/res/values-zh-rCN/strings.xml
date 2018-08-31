@@ -30,7 +30,7 @@
     <string name="item_export">导出数据</string>
     <string name="item_scan">扫描</string>
     <string name="item_stop_scan">停止扫描</string>
-    <string name="notify_measuring">心率测量进行中</string>
+    <string name="notify_measuring">测量中</string>
     <string name="toast_need_location_permission">扫描手环需要定位权限</string>
     <string name="toast_need_write_external">需要读写外置存储以导出数据</string>
 </resources>

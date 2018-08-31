@@ -27,6 +27,10 @@ public class ResponseWaiter {
         success = false;
     }
 
+    public synchronized void reset() {
+        success = null;
+    }
+
     public boolean work() {
         try {
             long start = System.currentTimeMillis();

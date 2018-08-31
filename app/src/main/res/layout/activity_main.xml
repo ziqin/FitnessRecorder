@@ -35,12 +35,31 @@
 
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btn"
-        tools:text="START"
-        android:layout_margin="16dp"
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true" />
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/btn"
+            tools:text="START"
+            android:layout_margin="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <Button
+            android:text="MEASURE ACCELERATION"
+            android:id="@+id/acceleration_btn"
+            android:layout_margin="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <Button
+            android:text="STOP MEASURING ACCELERATION"
+            android:id="@+id/stop_acceleration_btn"
+            android:layout_margin="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
 
 </RelativeLayout>

@@ -28,6 +28,8 @@ import in.wangziq.fitnessrecorder.utils.TimerUtil;
 
 public final class MiBand2 {
 
+    public interface TriFloatConsumer { void accept(float x, float y, float z); }
+
     private static final int REFRESH_TIMEOUT = 100; // 100ms
     private static final int USR_INTERACTION_TIMEOUT = 20000; // 20s
     private static final String TAG = MiBand2.class.getSimpleName();
@@ -40,6 +42,7 @@ public final class MiBand2 {
     private Consumer<BandState> mDisconnectHandler;
     private SparseArray<Consumer<byte[]>> mNoticeConsumers;
     private IntConsumer mHeartRateHandler;
+    private TriFloatConsumer mAccelerationHandler;
     private Timer mHeartRatePingTimer;
 
     public MiBand2(@Nullable String macAddress, @Nullable byte[] key) {
@@ -132,9 +135,13 @@ public final class MiBand2 {
             Log.e(TAG, "enableHeartRate: failed to turn on heart rate notification");
             return false;
         }
+
         if (!enableHeartRateContinuousMonitor()) {
             Log.e(TAG, "enableHeartRate: failed to enable heart rate continuous monitor");
         }
+//        turnOnRawDataNotify();
+//        enableAcceleration();
+
         enableHeartRatePing();
         return true;
     }
@@ -144,6 +151,102 @@ public final class MiBand2 {
         disableHeartRateContinuousMonitor();
         turnOffHeartRateNotify();
         Log.i(TAG, "stopMeasureHeartRate");
+    }
+
+    public boolean startMeasureAcceleration(TriFloatConsumer accelerationHandler) {
+        mAccelerationHandler = accelerationHandler;
+        if (!turnOnRawDataNotify()) return false;
+        if (!enableAcceleration()) return false;
+        return true;
+    }
+
+    public boolean stopMeasureAcceleration() { // TODO
+        ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
+        BleManager.getInstance().write(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
+                Protocol.ACCELERATION_STOP,
+                new BleWriteCallback() {
+                    @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                        waiter.ok();
+                        Log.i(TAG, "stopMeasureAcceleration: succeeded");
+                    }
+                    @Override public void onWriteFailure(BleException exception) {
+                        waiter.fail();
+                        Log.i(TAG, "stopMeasureAcceleration: failed");
+                    }
+                });
+        return waiter.work();
+    }
+
+    private boolean turnOnRawDataNotify() {
+        ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
+        BleManager.getInstance().notify(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_DATA,
+                new BleNotifyCallback() {
+                    @Override public void onNotifySuccess() {
+                        waiter.ok();
+                        Log.i(TAG, "turnOnRawDataNotify: succeeded");
+                    }
+                    @Override public void onNotifyFailure(BleException exception) {
+                        waiter.fail();
+                        Log.e(TAG, "turnOnRawDataNotify: failed");
+                    }
+                    @Override public void onCharacteristicChanged(byte[] data) {
+                        Log.i(TAG, "received raw data: length=" + data.length + ", data=" + BytesUtil.toHexStr(data));
+                        parseAcceleration(data);
+                    }
+                });
+        return waiter.work();
+    }
+
+    // see https://github.com/Freeyourgadget/Gadgetbridge/pull/703/files for details
+    private void parseAcceleration(byte[] value) {
+        if (value.length <= 2 || (value.length - 2) % 6 != 0) {
+            Log.w(TAG, ">>> parseAcceleration: got unexpected sensor data with length: " + value.length);
+            return;
+        }
+        float count = 0;
+        float x = 0, y = 0, z = 0;
+        for (int i = 2; i < value.length; i += 6, count += 1) {
+            x += (value[i]   | (value[i+1] << 8));
+            y += (value[i+2] | (value[i+3] << 8));
+            z += (value[i+4] | (value[i+5] << 8));
+        }
+        x /= count; y /= count; z /= count;
+        Log.i(TAG, String.format("parseAcceleration: x=%.3f, y=%.3f, z=%.3f, total=%.3f", x, y, z, Math.sqrt(x*x + y*y + z*z)));
+        if (mAccelerationHandler != null) mAccelerationHandler.accept(x, y, z);
+    }
+
+    // https://github.com/Freeyourgadget/Gadgetbridge/pull/894
+    private boolean enableAcceleration() {
+        ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
+        BleManager.getInstance().write(
+                mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
+                Protocol.ACCELERATION_INIT,
+                new BleWriteCallback() {
+                    @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                        waiter.ok();
+                        Log.i(TAG, "enableAcceleration step 1: succeeded");
+                    }
+                    @Override public void onWriteFailure(BleException exception) {
+                        waiter.fail();
+                        Log.e(TAG, "enableAcceleration step 1: failed");
+                    }
+                });
+        if (!waiter.work()) return false;
+
+        waiter.reset();
+        BleManager.getInstance().write(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
+                Protocol.ACCELERATION_START,
+                new BleWriteCallback() {
+                    @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                        waiter.ok();
+                        Log.i(TAG, "enableAcceleration step 2: succeeded");
+                    }
+                    @Override public void onWriteFailure(BleException exception) {
+                        waiter.fail();
+                        Log.i(TAG, "enableAcceleration step 2: failed");
+                    }
+                });
+        return waiter.work();
     }
 
     private void initAuthNoticeConsumer() {
