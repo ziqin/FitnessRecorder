@@ -1,31 +1,26 @@
 package in.wangziq.fitnessrecorder.activities;
 
 import android.bluetooth.BluetoothAdapter;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.databinding.DataBindingUtil;
+import android.databinding.ObservableBoolean;
 import android.os.Handler;
 import android.support.annotation.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.clj.fastble.BleManager;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import in.wangziq.fitnessrecorder.config.Constants;
 import in.wangziq.fitnessrecorder.R;
+import in.wangziq.fitnessrecorder.databinding.ActivityMainBinding;
 import in.wangziq.fitnessrecorder.hardware.BandState;
 import in.wangziq.fitnessrecorder.services.CommService;
+import in.wangziq.fitnessrecorder.utils.BytesUtil;
 
 public final class MainActivity extends AppCompatActivity {
 
@@ -34,33 +29,36 @@ public final class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_SCAN_BAND = 2;
 
-    private Button mButton, mAccelerationButton;
-    private TextView mHeartRateText, mTimeText;
+    private String mMacAddress;
+    private byte[] mAuthKey;
+
+    private ActivityMainBinding mData;
+    private Messenger mMessenger;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        mButton = findViewById(R.id.btn);
-        mAccelerationButton = findViewById(R.id.acceleration_btn);
-        mHeartRateText = findViewById(R.id.heart_rate_text);
-        mTimeText = findViewById(R.id.time_text);
+        mData = DataBindingUtil.setContentView(this, R.layout.activity_main);
+
+        mData.setConnectTransaction(mConnectTransaction);
+        mData.setHeartRateTransaction(mHeartRateTransaction);
+        mData.setAccelerationTransaction(mAccelerationTransaction);
+
+        mMessenger = new Messenger(this);
+        mMessenger.addHandler(mStateUpdateRequest);
+        mMessenger.addHandler(mConnectTransaction);
+        mMessenger.addHandler(mHeartRateTransaction);
+        mMessenger.addHandler(mAccelerationTransaction);
 
         initBle();
-        registerBroadcast();
-        CommService.startActionStateUpdate(this);
-
-        mAccelerationButton.setOnClickListener(view -> requestStartAccelerationMeasure());
-        Button mStopAccelerationButton = findViewById(R.id.stop_acceleration_btn);
-        mStopAccelerationButton.setOnClickListener(view -> requestStopAccelerationMeasure());
+        mStateUpdateRequest.request();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
-        Log.i(TAG, "onDestroy: unregistered broadcast receiver");
+        mMessenger.unregister();
     }
 
     @Override
@@ -77,21 +75,6 @@ public final class MainActivity extends AppCompatActivity {
         });
         exportMenuItem.setIntent(new Intent(this, ExportDataActivity.class));
         return ans;
-    }
-
-    // TODO: refactor: observer pattern
-    private void registerBroadcast() {
-        LocalBroadcastManager broadcastMgr = LocalBroadcastManager.getInstance(this);
-        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.STATE_UPDATE));
-        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.CONNECT));
-        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.PAIR));
-        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.START_HEART_RATE));
-        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.STOP_HEART_RATE));
-        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.BROADCAST_HEART_RATE));
-//        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.START_ACCELERATION));
-//        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.STOP_ACCELERATION));
-        broadcastMgr.registerReceiver(mBroadcastReceiver, new IntentFilter(Constants.Action.BROADCAST_ACCELERATION));
-        Log.i(TAG, "registered broadcast receiver");
     }
 
     private void initBle() {
@@ -118,16 +101,8 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void prepareScan() {
-        mButton.setText(R.string.btn_pair);
-        mButton.setEnabled(true);
-        mButton.setOnClickListener(view -> {
-            requestScan();
-        });
-    }
-
     private void requestScan() {
-        clearShownText();
+//        clearShownText();
         // TODO: consider setText(scanning) ?
         if (!checkAndEnableBt()) return;
         // mButton.setEnabled(false); // should keep enabled
@@ -137,66 +112,7 @@ public final class MainActivity extends AppCompatActivity {
 
     private void requestPair(String macAddress) {
         // if (!checkAndEnableBt()) return; // seems meaningless
-        mButton.setText(R.string.btn_pairing);
-        mButton.setEnabled(false);
         CommService.startActionPair(this, macAddress);
-    }
-
-    private void prepareConnect() {
-        mButton.setText(R.string.btn_connect);
-        mButton.setEnabled(true);
-        mButton.setOnClickListener(view -> requestConnect());
-    }
-
-    private void requestConnect() {
-        if (!checkAndEnableBt()) return;
-        mButton.setText(R.string.btn_connecting);
-        mButton.setEnabled(false);
-        CommService.startActionConnect(this);
-    }
-
-    private void clearShownText() {
-        mHeartRateText.setText(R.string.default_heart_rate);
-        mHeartRateText.setText(null);
-    }
-
-    private void prepareStartHeartRateMeasurement() {
-        clearShownText();
-        mButton.setText(R.string.btn_start);
-        mButton.setEnabled(true);
-        mButton.setOnClickListener(view -> requestStartHeartRateMeasure());
-        clearShownText();
-        mTimeText.setText(null);
-    }
-
-    private void prepareStopHeartRateMeasurement() {
-        mButton.setText(R.string.btn_stop);
-        mButton.setEnabled(true);
-        mButton.setOnClickListener(view -> requestStopHeartRateMeasure());
-    }
-
-    private void requestStartHeartRateMeasure() {
-        mHeartRateText.setText(R.string.loading_heart_rate);
-        mButton.setText(R.string.btn_enabling);
-        mButton.setEnabled(false);
-        CommService.startActionStartHeartRateMeasure(this);
-        // TODO: request + bind stop listener
-    }
-
-    private void requestStopHeartRateMeasure() {
-        mButton.setText(R.string.btn_disabling);
-        mButton.setEnabled(false);
-        CommService.startActionStopHeartRateMeasure(this);
-    }
-
-    private void requestStartAccelerationMeasure() {
-        Intent i = new Intent(this, CommService.class).setAction(Constants.Action.START_ACCELERATION);
-        startService(i);
-    }
-
-    private void requestStopAccelerationMeasure() {
-        Intent i = new Intent(this, CommService.class).setAction(Constants.Action.STOP_ACCELERATION);
-        startService(i);
     }
 
     @Override
@@ -219,105 +135,180 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void handleStateUpdate(Intent intent) {
-        String macAddress = intent.getStringExtra(Constants.Extra.MAC);
-        byte[] authKey = intent.getByteArrayExtra(Constants.Extra.KEY);
-        BandState state = new BandState(intent.getIntExtra(Constants.Extra.STATE, BandState.DEFAULT_VALUE));
-        if (macAddress == null || authKey == null) {
-            prepareScan();
-        } else if (state.isEncrypted()) {
-            if (state.isMeasuringHeartRate()) prepareStopHeartRateMeasurement();
-            else prepareStartHeartRateMeasurement();
-        } else {
-            prepareConnect();
+    private Request mStateUpdateRequest = new Request() {
+        @Override public String[] getActions() {
+            return new String[] { Constants.Action.STATE_UPDATE };
         }
-    }
 
-    private void handlePairResponse(Intent intent) {
-        int status = intent.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
-        if (status == Constants.Status.OK) {
-            prepareStartHeartRateMeasurement();
-            Toast.makeText(this, R.string.toast_pair_ok, Toast.LENGTH_SHORT).show();
-        } else {
-            prepareScan();
-            Toast.makeText(this, R.string.toast_pair_fail, Toast.LENGTH_SHORT).show();
+        @Override public void request() {
+            Intent i = new Intent(MainActivity.this, CommService.class)
+                    .setAction(Constants.Action.STATE_UPDATE);
+            startService(i);
         }
-    }
 
-    private void handleConnectResponse(Intent intent) {
-        int status = intent.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
-        if (status == Constants.Status.OK) {
-            prepareStartHeartRateMeasurement();
-            Toast.makeText(this, R.string.toast_connect_ok, Toast.LENGTH_SHORT).show();
-        } else {
-            prepareConnect();
-            Toast.makeText(this, R.string.toast_connect_fail, Toast.LENGTH_SHORT).show();
+        @Override public void handleResponse(Intent response) {
+            super.handleResponse(response);
+            mMacAddress = response.getStringExtra(Constants.Extra.MAC);
+            mAuthKey = response.getByteArrayExtra(Constants.Extra.KEY);
+            BandState state = new BandState(response.getIntExtra(Constants.Extra.STATUS, BandState.DEFAULT_VALUE));
+            mData.setConnected(state.isEncrypted());
+
+//            mHeartRateTransaction.setRunning(state.isMeasuringHeartRate());
+
+            // TODO !!!
+            // TODO !!!
+            // TODO !!!
         }
-    }
+    };
 
-    private void handleStartHeartRateResponse(Intent response) {
-        if (response.getIntExtra(Constants.Extra.STATE, Constants.Status.UNKNOWN) == Constants.Status.OK) {
-            prepareStopHeartRateMeasurement();
-            Log.i(TAG, "handleStartHeartRateResponse: enabled successfully");
-        } else {
-            prepareStartHeartRateMeasurement();
-            Log.i(TAG, "handleStartHeartRateResponse: failed to enable");
+    private Transaction mConnectTransaction = new Transaction() {
+        @Override public String[] getActions() {
+            return new String[] {
+                    Constants.Action.PAIR,
+                    Constants.Action.CONNECT,
+                    Constants.Action.DISCONNECT
+            };
         }
-    }
 
-    private void handleStopHeartRateResponse(Intent response) {
-        if (response.getIntExtra(Constants.Extra.STATE, Constants.Status.UNKNOWN) == Constants.Status.OK) {
-            prepareStartHeartRateMeasurement();
-        } else {
-            prepareStopHeartRateMeasurement();
+        @Override public void start() {
+            if (mMacAddress == null) requestScan();
+            else if (mAuthKey == null) CommService.startActionPair(MainActivity.this, mMacAddress);
+            else CommService.startActionConnect(MainActivity.this);
+            Log.i(TAG, "ConnectTransaction.start: mac=" + mMacAddress + ", authKey=" + BytesUtil.toHexStr(mAuthKey));
         }
-    }
 
-    private void handleHeartRateBroadcast(Intent data) {
-        int heartRate = data.getIntExtra(Constants.Extra.HEART_RATE, -1);
-        if (heartRate > 0) {
-            mHeartRateText.setText(Integer.toString(heartRate));
-            mTimeText.setText(SimpleDateFormat.getTimeInstance().format(new Date()));
-            Log.i(TAG, "handleHeartRateBroadcast: heartRate=" + heartRate);
+        @Override public void stop() {
+            CommService.startActionDisconnect(MainActivity.this);
+            Log.i(TAG, "stop: disconnect");
         }
-    }
 
-    private void handleAccelerationBroadcast(Intent data) {
-        float x = data.getFloatExtra(Constants.Extra.ACCELERATION_X, Float.NaN);
-        float y = data.getFloatExtra(Constants.Extra.ACCELERATION_Y, Float.NaN);
-        float z = data.getFloatExtra(Constants.Extra.ACCELERATION_Z, Float.NaN);
-        Log.i(TAG, String.format("handleAccelerationBroadcast: x=%.3f, y=%.3f, z=%.3f", x, y, z));
-    }
-
-    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action;
-            if (intent == null || (action = intent.getAction()) == null) return;
-            switch (action) {
-                case Constants.Action.STATE_UPDATE:
-                    handleStateUpdate(intent);
-                    break;
+        @Override public void handleResponse(Intent response) {
+            super.handleResponse(response);
+            int status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
+            switch (response.getAction()) {
                 case Constants.Action.PAIR:
-                    handlePairResponse(intent);
-                    break;
                 case Constants.Action.CONNECT:
-                    handleConnectResponse(intent);
+                    if (status == Constants.Status.OK) mData.setConnected(true);
                     break;
-                case Constants.Action.START_HEART_RATE:
-                    handleStartHeartRateResponse(intent);
+                case Constants.Action.DISCONNECT:
+                    if (status == Constants.Status.OK) mData.setConnected(false);
                     break;
-                case Constants.Action.STOP_HEART_RATE:
-                    handleStopHeartRateResponse(intent);
-                    break;
-                case Constants.Action.BROADCAST_HEART_RATE:
-                    handleHeartRateBroadcast(intent);
-                    break;
-                case Constants.Action.BROADCAST_ACCELERATION:
-                    handleAccelerationBroadcast(intent);
-                    break;
-                default: Log.i(TAG, "onReceive: Unknown action: " + action);
             }
         }
     };
+
+
+    private Transaction mHeartRateTransaction = new Transaction() {
+        @Override public String[] getActions() {
+            return new String[] {
+                    Constants.Action.START_HEART_RATE,
+                    Constants.Action.STOP_HEART_RATE,
+                    Constants.Action.BROADCAST_HEART_RATE
+            };
+        }
+
+        @Override public void start() {
+            Log.i(TAG, "HeartRateTransaction starting");
+            CommService.startActionStartHeartRateMeasure(MainActivity.this);
+        }
+
+        @Override public void stop() {
+            Log.i(TAG, "HeartRateTransaction stopping");
+            CommService.startActionStopHeartRateMeasure(MainActivity.this);
+        }
+
+        @Override public void handleResponse(Intent response) {
+            super.handleResponse(response);
+            int status;
+            switch (response.getAction()) {
+                case Constants.Action.BROADCAST_HEART_RATE:
+                    int heartRate = response.getIntExtra(Constants.Extra.HEART_RATE, -1);
+                    mData.setHeartRate(heartRate);
+                    Log.i(TAG, "handleResponse: got heart rate = " + heartRate);
+                    break;
+                case Constants.Action.START_HEART_RATE:
+                    status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
+                    boolean success = status == Constants.Status.OK;
+                    running.set(success);
+                    if (!success) Toast.makeText(MainActivity.this, R.string.toast_heart_rate_on_failed, Toast.LENGTH_SHORT).show();
+                    break;
+                case Constants.Action.STOP_HEART_RATE:
+                    status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
+                    if (status == Constants.Status.OK) running.set(false);
+                    else Toast.makeText(MainActivity.this, R.string.toast_heart_rate_off_failed, Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    };
+
+
+    private Transaction mAccelerationTransaction = new Transaction() {
+        @Override public String[] getActions() {
+            return new String[] {
+                    Constants.Action.START_ACCELERATION,
+                    Constants.Action.STOP_ACCELERATION,
+                    Constants.Action.BROADCAST_ACCELERATION
+            };
+        }
+
+        @Override public void start() {
+            Intent i = new Intent(MainActivity.this, CommService.class)
+                    .setAction(Constants.Action.START_ACCELERATION);
+            startService(i);
+        }
+
+        @Override public void stop() {
+            Intent i = new Intent(MainActivity.this, CommService.class)
+                    .setAction(Constants.Action.STOP_ACCELERATION);
+            startService(i);
+        }
+
+        @Override public void handleResponse(Intent response) {
+            super.handleResponse(response);
+            int status;
+            switch (response.getAction()) {
+                case Constants.Action.BROADCAST_ACCELERATION:
+                    float x = response.getFloatExtra(Constants.Extra.ACCELERATION_X, 0);
+                    float y = response.getFloatExtra(Constants.Extra.ACCELERATION_Y, 0);
+                    float z = response.getFloatExtra(Constants.Extra.ACCELERATION_Z, 0);
+                    mData.setAccelerationX(x);
+                    mData.setAccelerationY(y);
+                    mData.setAccelerationZ(z);
+                    Log.i(TAG, "AccelerationTransaction.handleResponse: x=" + x + " y=" + y + " z=" + z);
+                    break;
+                case Constants.Action.START_ACCELERATION:
+                    status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
+                    boolean success = status == Constants.Status.OK;
+                    running.set(success);
+                    if (!success) Toast.makeText(MainActivity.this, R.string.toast_acceleration_on_failed, Toast.LENGTH_SHORT).show();
+                    break;
+                case Constants.Action.STOP_ACCELERATION:
+                    status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
+                    if (status == Constants.Status.OK) running.set(false);
+                    else Toast.makeText(MainActivity.this, R.string.toast_acceleration_off_failed, Toast.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+    };
+
+
+    public static abstract class Request extends Messenger.MessageHandler {
+        public abstract void request();
+    }
+
+
+    public static abstract class Transaction extends Messenger.MessageHandler {
+        public final ObservableBoolean running = new ObservableBoolean() {
+            @Override
+            public void set(boolean value) {
+                if (this.get() != value) {
+                    if (value) start();
+                    else stop();
+                }
+                super.set(value);
+            }
+        };
+        public abstract void start();
+        public abstract void stop();
+    }
 }

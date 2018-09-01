@@ -6,7 +6,7 @@
         android:id="@+id/start_pair"
         android:icon="@drawable/ic_bluetooth_searching_white_48dp"
         android:title="@string/item_pair_band"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/export_data"

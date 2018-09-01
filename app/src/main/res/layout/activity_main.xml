@@ -1,65 +1,151 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout
+<layout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" >
 
-    android:layout_height="match_parent"
-    android:layout_width="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp" >
+    <data>
+        <import type="android.view.View" />
 
-    <LinearLayout
-        android:orientation="vertical"
+        <variable
+            name="connected"
+            type="boolean" />
+        <variable
+            name="heartRate"
+            type="int" />
+        <variable
+            name="accelerationX"
+            type="float" />
+        <variable
+            name="accelerationY"
+            type="float" />
+        <variable
+            name="accelerationZ"
+            type="float" />
+
+        <variable
+            name="connectTransaction"
+            type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+        <variable
+            name="heartRateTransaction"
+            type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+        <variable
+            name="accelerationTransaction"
+            type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+    </data>
+
+    <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/heart_rate_text"
-            android:layout_width="match_parent"
+        <android.support.design.widget.FloatingActionButton
+            android:onClick="@{() -> connected ? connectTransaction.stop() : connectTransaction.start()}"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="24dp"
-            android:text="@string/default_heart_rate"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display4"
-            android:textAlignment="center"
-            tools:text="65" />
+            android:layout_margin="32dp"
+            android:src="@drawable/ic_bluetooth_searching_white_48dp"
+            app:layout_anchor="@id/control_panel"
+            app:layout_anchorGravity="top|start" />
 
-        <TextView
-            android:id="@+id/time_text"
-            tools:text="09:30:22"
-            android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-    </LinearLayout>
+            <!-- information view -->
+            <LinearLayout
+                android:visibility="@{connected ? View.VISIBLE : View.INVISIBLE}"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_alignParentBottom="true"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+                <!-- Heart rate view -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="24dp"
+                    android:text="@{Integer.toString(heartRate)}"
+                    android:visibility="@{heartRateTransaction.running ? (heartRate > 0 ? View.VISIBLE : View.INVISIBLE) : View.GONE}"
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Display4"
+                    tools:text="65" />
 
-        <Button
-            android:id="@+id/btn"
-            tools:text="START"
-            android:layout_margin="16dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <Button
-            android:text="MEASURE ACCELERATION"
-            android:id="@+id/acceleration_btn"
-            android:layout_margin="16dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <Button
-            android:text="STOP MEASURING ACCELERATION"
-            android:id="@+id/stop_acceleration_btn"
-            android:layout_margin="16dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+                <!-- Acceleration view -->
+                <TextView
+                    android:text="@{String.format(`x = %+.2f\ny = %+.2f\nz = %+.2f`, accelerationX, accelerationY, accelerationZ)}"
+                    android:visibility="@{accelerationTransaction.running ? View.VISIBLE : View.GONE}"
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+                    android:padding="32dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
 
-    </LinearLayout>
+                <!--<TextView-->
+                    <!--android:id="@+id/time_text"-->
+                    <!--android:layout_width="match_parent"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:textAlignment="center"-->
+                    <!--android:textAppearance="@style/TextAppearance.AppCompat.Large"-->
+                    <!--tools:text="09:30:22" />-->
+            </LinearLayout>
 
-</RelativeLayout>
+            <LinearLayout
+                android:id="@+id/control_panel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:background="@color/white"
+                android:elevation="10dp"
+                android:orientation="vertical"
+                android:paddingStart="32dp"
+                android:paddingEnd="32dp"
+                android:paddingTop="40dp"
+                android:paddingBottom="16dp" >
+
+                <!-- Heart rate control -->
+                <LinearLayout
+                    android:layout_marginBottom="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:text="@{heartRateTransaction.running ? @string/switch_heart_rate_on : @string/switch_heart_rate_off}"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2" />
+                    <Switch
+                        android:enabled="@{connected}"
+                        android:checked="@={heartRateTransaction.running}"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:switchMinWidth="56dp" />
+                </LinearLayout>
+
+                <!-- Acceleration control -->
+                <LinearLayout
+                    android:layout_marginBottom="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:text="@{accelerationTransaction.running ? @string/switch_acceleration_on : @string/switch_acceleration_off}"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="2" />
+                    <Switch
+                        android:id="@+id/switch_acceleration"
+                        android:enabled="@{connected}"
+                        android:checked="@={accelerationTransaction.running}"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:switchMinWidth="56dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </RelativeLayout>
+    </android.support.design.widget.CoordinatorLayout>
+
+</layout>

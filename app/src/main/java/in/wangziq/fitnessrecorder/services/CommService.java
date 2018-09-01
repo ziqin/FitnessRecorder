@@ -200,7 +200,7 @@ public final class CommService extends Service {
                 });
             }
             Intent response = new Intent(Constants.Action.START_HEART_RATE)
-                    .putExtra(Constants.Extra.STATE, success ? Constants.Status.OK : Constants.Status.FAILED);
+                    .putExtra(Constants.Extra.STATUS, success ? Constants.Status.OK : Constants.Status.FAILED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
             mHeartRateWorkThread = null;
         });
@@ -220,7 +220,7 @@ public final class CommService extends Service {
         mHeartRateWorkThread = new Thread(() -> {
             mBand.stopMeasureHeartRate();
             // FIXME: current implementation: always return OK
-            Intent response = new Intent(Constants.Action.STOP_HEART_RATE).putExtra(Constants.Extra.STATE, Constants.Status.OK);
+            Intent response = new Intent(Constants.Action.STOP_HEART_RATE).putExtra(Constants.Extra.STATUS, Constants.Status.OK);
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
             mHeartRateWorkThread = null;
         });
@@ -235,8 +235,7 @@ public final class CommService extends Service {
         }
         foregroundNotify();
         mAccelerationWorkThread = new Thread(() -> {
-            boolean success;
-            success = mBand.startMeasureAcceleration((x, y, z) -> {
+            boolean success = mBand.startMeasureAcceleration((x, y, z) -> {
                 Intent i = new Intent(Constants.Action.BROADCAST_ACCELERATION)
                         .putExtra(Constants.Extra.ACCELERATION_X, x)
                         .putExtra(Constants.Extra.ACCELERATION_Y, y)
@@ -244,7 +243,7 @@ public final class CommService extends Service {
                 LocalBroadcastManager.getInstance(this).sendBroadcast(i);
             });
             Intent response = new Intent(Constants.Action.START_ACCELERATION)
-                    .putExtra(Constants.Extra.STATE, success ? Constants.Status.OK : Constants.Status.FAILED);
+                    .putExtra(Constants.Extra.STATUS, success ? Constants.Status.OK : Constants.Status.FAILED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
             mAccelerationWorkThread = null;
         });
@@ -252,6 +251,8 @@ public final class CommService extends Service {
     }
 
     private void stopAccelerationMeasure() {
+        Log.i(TAG, "stopAccelerationMeasure: stopping acceleration measurement");
+
         // TODO: release lock
         if (mAccelerationWorkThread != null && mAccelerationWorkThread.isAlive()) {
             Log.w(TAG, "stopAccelerationMeasure: the last thread is still working, current task canceled");
@@ -261,7 +262,10 @@ public final class CommService extends Service {
         stopForeground(true);
 
         mAccelerationWorkThread = new Thread(() -> {
-            mBand.stopMeasureAcceleration();
+            boolean success = mBand.stopMeasureAcceleration();
+            Intent response = new Intent(Constants.Action.STOP_ACCELERATION)
+                    .putExtra(Constants.Extra.STATUS, success ? Constants.Status.OK : Constants.Status.FAILED);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(response);
             mAccelerationWorkThread = null;
         });
         mAccelerationWorkThread.start();

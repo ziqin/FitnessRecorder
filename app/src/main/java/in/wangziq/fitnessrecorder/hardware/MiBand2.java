@@ -76,6 +76,10 @@ public final class MiBand2 {
     }
 
 
+    /**
+     * @param refresh true if it's a new connection without historical key
+     * @return connected successfully or failed
+     */
     // TODO: should be improved
     // synchronized communication
     // doAfter REFRESH_TIMEOUT: let waitForStateUpdate() get the old state before executing a task
@@ -147,10 +151,10 @@ public final class MiBand2 {
     }
 
     public void stopMeasureHeartRate() {
+        Log.i(TAG, "stopMeasureHeartRate");
         disableHeartRatePing();
         disableHeartRateContinuousMonitor();
         turnOffHeartRateNotify();
-        Log.i(TAG, "stopMeasureHeartRate");
     }
 
     public boolean startMeasureAcceleration(TriFloatConsumer accelerationHandler) {

@@ -15,6 +15,11 @@
     <string name="toast_need_location_permission">Location service permission is required for scanning MI Band!</string>
     <string name="toast_need_write_external">To export data, writing external storage is required!</string>
 
+    <string name="toast_heart_rate_on_failed">Failed to measure heart rate!</string>
+    <string name="toast_heart_rate_off_failed">Failed to turn off heart rate measurement!</string>
+    <string name="toast_acceleration_on_failed">Failed to measure acceleration!</string>
+    <string name="toast_acceleration_off_failed">Failed to turn off acceleration measurement!</string>
+
     <string name="export_tip">Your data will be exported to\n%1$s</string>
     <string name="default_heart_rate"> </string>
     <string name="loading_heart_rate">&#8230;</string>
@@ -23,11 +28,16 @@
     <string name="btn_connect">CONNECT MY BAND</string>
     <string name="btn_pairing">PARING</string>
     <string name="btn_connecting">CONNECTING</string>
-    <string name="btn_start">START MEASUREMENT</string>
-    <string name="btn_stop">STOP MEASUREMENT</string>
-    <string name="btn_enabling">ENABLING MEASUREMENT</string>
-    <string name="btn_disabling">DISABLING MEASUREMENT</string>
+    <!--<string name="btn_start">START MEASUREMENT</string>-->
+    <!--<string name="btn_stop">STOP MEASUREMENT</string>-->
+    <!--<string name="btn_enabling">ENABLING MEASUREMENT</string>-->
+    <!--<string name="btn_disabling">DISABLING MEASUREMENT</string>-->
     <string name="btn_export">EXPORT DATA</string>
+
+    <string name="switch_heart_rate_on">Live heart rate measurement on</string>
+    <string name="switch_heart_rate_off">Live heart rate measurement off</string>
+    <string name="switch_acceleration_on">Live acceleration measurement on</string>
+    <string name="switch_acceleration_off">Live acceleration measurement off</string>
 
     <string name="label_fitness_recorder">Fitness Recorder</string>
     <string name="label_pair_band">Pair My Band</string>

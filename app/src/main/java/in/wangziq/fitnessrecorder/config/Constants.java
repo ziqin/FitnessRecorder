@@ -5,16 +5,16 @@ public final class Constants {
     private static final String BASE = "in.wangziq.fitnessrecorder.";
 
     public static final class Action {
-        public static final String STATE_UPDATE = BASE + ".services.action.GET_STATE";
-        public static final String PAIR = BASE + ".services.action.PAIR";
-        public static final String CONNECT = BASE + ".services.action.CONNECT";
-        public static final String DISCONNECT = BASE + ".services.action.DISCONNECT";
-        public static final String START_HEART_RATE = BASE + ".services.action.START_HEART_RATE";
-        public static final String STOP_HEART_RATE = BASE + ".services.action.STOP_HEART_RATE";
-        public static final String BROADCAST_HEART_RATE = BASE + ".services.action.BROADCAST_HEART_RATE";
-        public static final String START_ACCELERATION = BASE + ".services.action.START_ACCELERATION";
-        public static final String STOP_ACCELERATION = BASE + ".services.action.STOP_ACCELERATION";
-        public static final String BROADCAST_ACCELERATION = BASE + ".services.action.BROADCAST_ACCELERATION";
+        public static final String STATE_UPDATE = BASE + "services.action.GET_STATE";
+        public static final String PAIR = BASE + "services.action.PAIR";
+        public static final String CONNECT = BASE + "services.action.CONNECT";
+        public static final String DISCONNECT = BASE + "services.action.DISCONNECT";
+        public static final String START_HEART_RATE = BASE + "services.action.START_HEART_RATE";
+        public static final String STOP_HEART_RATE = BASE + "services.action.STOP_HEART_RATE";
+        public static final String BROADCAST_HEART_RATE = BASE + "services.action.BROADCAST_HEART_RATE";
+        public static final String START_ACCELERATION = BASE + "services.action.START_ACCELERATION";
+        public static final String STOP_ACCELERATION = BASE + "services.action.STOP_ACCELERATION";
+        public static final String BROADCAST_ACCELERATION = BASE + "services.action.BROADCAST_ACCELERATION";
     }
 
     public static final class Extra {
