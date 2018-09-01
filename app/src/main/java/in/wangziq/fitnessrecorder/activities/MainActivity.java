@@ -102,10 +102,7 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void requestScan() {
-//        clearShownText();
-        // TODO: consider setText(scanning) ?
         if (!checkAndEnableBt()) return;
-        // mButton.setEnabled(false); // should keep enabled
         Intent i = new Intent(this, ScanBandActivity.class);
         startActivityForResult(i, REQUEST_SCAN_BAND);
     }
@@ -150,14 +147,12 @@ public final class MainActivity extends AppCompatActivity {
             super.handleResponse(response);
             mMacAddress = response.getStringExtra(Constants.Extra.MAC);
             mAuthKey = response.getByteArrayExtra(Constants.Extra.KEY);
-            BandState state = new BandState(response.getIntExtra(Constants.Extra.STATUS, BandState.DEFAULT_VALUE));
+            BandState state = new BandState(response.getIntExtra(Constants.Extra.STATE, BandState.DEFAULT_VALUE));
+            Log.i(TAG, String.format("StateUpdateRequest.handleResponse: mac=%s, authKey=%s, state=%s",
+                    mMacAddress, BytesUtil.toHexStr(mAuthKey), state));
             mData.setConnected(state.isEncrypted());
-
-//            mHeartRateTransaction.setRunning(state.isMeasuringHeartRate());
-
-            // TODO !!!
-            // TODO !!!
-            // TODO !!!
+            mHeartRateTransaction.running.set(state.isMeasuringHeartRate());
+            mAccelerationTransaction.running.set(state.isMeasuringAcceleration());
         }
     };
 
@@ -171,6 +166,10 @@ public final class MainActivity extends AppCompatActivity {
         }
 
         @Override public void start() {
+            if (!checkAndEnableBt()) {
+                Log.w(TAG, "ConnectTransaction.start: bluetooth disabled");
+                return;
+            }
             if (mMacAddress == null) requestScan();
             else if (mAuthKey == null) CommService.startActionPair(MainActivity.this, mMacAddress);
             else CommService.startActionConnect(MainActivity.this);
@@ -179,7 +178,7 @@ public final class MainActivity extends AppCompatActivity {
 
         @Override public void stop() {
             CommService.startActionDisconnect(MainActivity.this);
-            Log.i(TAG, "stop: disconnect");
+            Log.i(TAG, "ConnectTransaction.stop: disconnect");
         }
 
         @Override public void handleResponse(Intent response) {
@@ -224,16 +223,18 @@ public final class MainActivity extends AppCompatActivity {
                 case Constants.Action.BROADCAST_HEART_RATE:
                     int heartRate = response.getIntExtra(Constants.Extra.HEART_RATE, -1);
                     mData.setHeartRate(heartRate);
-                    Log.i(TAG, "handleResponse: got heart rate = " + heartRate);
+                    Log.i(TAG, "HeartRateTransaction.handleResponse: got heart rate = " + heartRate);
                     break;
                 case Constants.Action.START_HEART_RATE:
                     status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
+                    Log.i(TAG, "HeartRateTransaction.handleResponse: START_HEART_RATE status=" + status);
                     boolean success = status == Constants.Status.OK;
                     running.set(success);
                     if (!success) Toast.makeText(MainActivity.this, R.string.toast_heart_rate_on_failed, Toast.LENGTH_SHORT).show();
                     break;
                 case Constants.Action.STOP_HEART_RATE:
                     status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
+                    Log.i(TAG, "HeartRateTransaction.handleResponse: START_HEART_RATE status=" + status);
                     if (status == Constants.Status.OK) running.set(false);
                     else Toast.makeText(MainActivity.this, R.string.toast_heart_rate_off_failed, Toast.LENGTH_SHORT).show();
                     break;
@@ -298,16 +299,7 @@ public final class MainActivity extends AppCompatActivity {
 
 
     public static abstract class Transaction extends Messenger.MessageHandler {
-        public final ObservableBoolean running = new ObservableBoolean() {
-            @Override
-            public void set(boolean value) {
-                if (this.get() != value) {
-                    if (value) start();
-                    else stop();
-                }
-                super.set(value);
-            }
-        };
+        public final ObservableBoolean running = new ObservableBoolean();
         public abstract void start();
         public abstract void stop();
     }

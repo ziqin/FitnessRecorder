@@ -43,27 +43,34 @@ public final class Protocol {
 
 //    public final static String NOTIFICATION_DESCRIPTOR = String.format(BASE, 0x2902);
 
-    public static final byte[] SEND_KEY_CMD         = {0x01, 0x00};
-    public static final byte[] RAND_REQUEST         = {0x02, 0x00};
-    public static final byte[] SEND_ENCRYPTED_CMD   = {0x03, 0x00};
+    public final static class Command {
+        public static final byte[] SEND_KEY = {0x01, 0x00};
+        public static final byte[] RAND_REQUEST         = {0x02, 0x00};
+        public static final byte[] SEND_ENCRYPTED = {0x03, 0x00};
 
-    public static final int SEND_KEY_RESPONSE_OK   = 0x100101;
-    public static final int SEND_KEY_RESPONSE_OOPS = 0x100104;
-    public static final int RAND_RESPONSE_OK       = 0x100201;
-    public static final int RAND_RESPONSE_OOPS     = 0x100204;
-    public static final int AUTH_RESPONSE_OK       = 0x100301;
-    public static final int AUTH_RESPONSE_OOPS     = 0x100304;
+        public static final byte[] HEART_STOP_CONTINUOUS    = {0x15, 0x01, 0x00};
+        public static final byte[] HEART_START_CONTINUOUS = {0x15, 0x01, 0x01};
+        public static final byte[] HEART_STOP_MANUAL        = {0x15, 0x02, 0x00};
+        public static final byte[] HEART_START_MANUAL       = {0x15, 0x02, 0x01};
+        public static final byte[] HEART_KEEP_ALIVE         = {0x16};
 
-    public static final byte[] HEART_STOP_CONTINUOUS    = {0x15, 0x01, 0x00};
-    public static final byte[] HEART_START_CONTIUOUS    = {0x15, 0x01, 0x01};
-    public static final byte[] HEART_STOP_MANUAL        = {0x15, 0x02, 0x00};
-    public static final byte[] HEART_START_MANUAL       = {0x15, 0x02, 0x01};
-    public static final byte[] HEART_KEEP_ALIVE         = {0x16};
+        public static final byte[] ACCELERATION_INIT = {0x01, 0x01, 0x19}; // 0x01, 0x02, 0x19 (heart rate) / 0x01, 0x03, 0x19
+        public static final byte[] ACCELERATION_START = {0x02};
+        public static final byte[] ACCELERATION_STOP = {0x03};  // or 0x02
+    }
 
-    public static final byte[] ACCELERATION_INIT = {0x01, 0x01, 0x19}; // 0x01, 0x02, 0x19 (heart rate) / 0x01, 0x03, 0x19
-    public static final byte[] ACCELERATION_START = {0x02};
-    public static final byte[] ACCELERATION_STOP = {0x03};  // or 0x02
+    public final static class Response {
+        public static final int SEND_KEY_OK = 0x100101;
+        public static final int SEND_KEY_OOPS = 0x100104;
+        public static final int RAND_OK = 0x100201;
+        public static final int RAND_OOPS = 0x100204;
+        public static final int AUTH_OK = 0x100301;
+        public static final int AUTH_OOPS = 0x100304;
+    }
 
-    public static final int HEART_KEEP_ALIVE_PERIOD = 10000; // 10 s
+    public final static class Time {
+        public static final int HEART_KEEP_ALIVE_PERIOD = 10000; // 10 s
+        public static final int ACCELERATION_PERIOD = 65000; // automatically stop every 70s
+    }
 
 }

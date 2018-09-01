@@ -32,14 +32,20 @@ public class Messenger extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.i(TAG, "received broadcast from " + context.getClass().getSimpleName() + ",");
-        MessageHandler t;
+        StringBuilder logMsg = new StringBuilder()
+                .append("received broadcast from ")
+                .append(context.getClass().getSimpleName());
         final String action = intent.getAction();
-        if (action == null || (t = mMessageHandlers.get(action)) == null)
-            Log.w(TAG, "unknown action");
+        if (action == null) {
+            Log.w(TAG, logMsg.append(", no action").toString());
+            return;
+        }
+        MessageHandler t = mMessageHandlers.get(action);
+        if (t == null)
+            Log.w(TAG, logMsg.append(", unknown action: ").append(action).toString());
         else {
             t.handleResponse(intent);
-            Log.i(TAG, "action=" + action);
+            Log.i(TAG, logMsg.append(", action=").append(action).toString());
         }
     }
 

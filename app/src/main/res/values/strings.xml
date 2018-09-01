@@ -24,14 +24,6 @@
     <string name="default_heart_rate"> </string>
     <string name="loading_heart_rate">&#8230;</string>
 
-    <string name="btn_pair">PAIR MY BAND</string>
-    <string name="btn_connect">CONNECT MY BAND</string>
-    <string name="btn_pairing">PARING</string>
-    <string name="btn_connecting">CONNECTING</string>
-    <!--<string name="btn_start">START MEASUREMENT</string>-->
-    <!--<string name="btn_stop">STOP MEASUREMENT</string>-->
-    <!--<string name="btn_enabling">ENABLING MEASUREMENT</string>-->
-    <!--<string name="btn_disabling">DISABLING MEASUREMENT</string>-->
     <string name="btn_export">EXPORT DATA</string>
 
     <string name="switch_heart_rate_on">Live heart rate measurement on</string>

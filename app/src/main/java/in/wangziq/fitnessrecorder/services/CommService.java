@@ -52,7 +52,7 @@ public final class CommService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "onDestroy");
-        disconnect();
+        disconnectSync();
         stopForeground(true);
     }
 
@@ -68,7 +68,7 @@ public final class CommService extends Service {
             stopSelfResult(startId);
             return START_NOT_STICKY;
         }
-
+        Log.i(TAG, "onStartCommand: action=" + action);
         switch (action) {
             case Constants.Action.STATE_UPDATE:
                 broadcastState(mBand.getState());
@@ -95,7 +95,7 @@ public final class CommService extends Service {
                 stopAccelerationMeasure();
                 break;
             default:
-                Log.i(TAG, "onStartCommand: Unknown action: " + action);
+                Log.w(TAG, "onStartCommand: Unknown action");
         }
         return START_NOT_STICKY;
     }
@@ -129,7 +129,7 @@ public final class CommService extends Service {
             Log.i(TAG, "pairAndConnect: the last thread is still working, current task canceled");
             return;
         }
-        disconnect();
+        disconnectSync();
         mBand = createMiBandInstanceWithCallback(macAddress, null);
         mHeartRateWorkThread = new Thread(() -> {
             boolean success = mBand.connect(true);
@@ -172,8 +172,12 @@ public final class CommService extends Service {
         mHeartRateWorkThread.start();
     }
 
-    private void disconnect() {
+    private void disconnectSync() {
         if (mBand.getState().isBleConnected()) mBand.disconnect();
+    }
+
+    private void disconnect() {
+        new Thread(this::disconnectSync).start();
     }
 
     private void startHeartRateMeasure() {
@@ -182,15 +186,15 @@ public final class CommService extends Service {
             return;
         }
 
-        PowerManager powerMgr = (PowerManager) getSystemService(POWER_SERVICE);
-        if (powerMgr != null) mWakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "KeepHeartBeat");
-        mWakeLock.acquire(WAKELOCK_TIMEOUT);
-
+        lockAwake();
         foregroundNotify();
 
         mHeartRateWorkThread = new Thread(() -> {
-            boolean success = false;
-            if (!mBand.getState().isMeasuringHeartRate()) {
+            boolean success;
+            if (mBand.getState().isMeasuringHeartRate()) {
+                success = true;
+                Log.i(TAG, "startHeartRateMeasure: already measuring");
+            } else {
                 success = mBand.startMeasureHeartRate(heartRate -> {
                     mDatabase.insertHeartRate(heartRate);
 
@@ -208,7 +212,7 @@ public final class CommService extends Service {
     }
 
     private void stopHeartRateMeasure() {
-        if (mWakeLock != null) mWakeLock.release();
+        if (mWakeLock != null && mWakeLock.isHeld()) mWakeLock.release();
 
         if (mHeartRateWorkThread != null && mHeartRateWorkThread.isAlive()) {
             Log.w(TAG, "startHeartRateMeasure: the last thread is still working, current task canceled");
@@ -218,9 +222,9 @@ public final class CommService extends Service {
         stopForeground(true);
 
         mHeartRateWorkThread = new Thread(() -> {
-            mBand.stopMeasureHeartRate();
-            // FIXME: current implementation: always return OK
-            Intent response = new Intent(Constants.Action.STOP_HEART_RATE).putExtra(Constants.Extra.STATUS, Constants.Status.OK);
+            boolean success = mBand.stopMeasureHeartRate();
+            Intent response = new Intent(Constants.Action.STOP_HEART_RATE)
+                    .putExtra(Constants.Extra.STATUS, success ? Constants.Status.OK : Constants.Status.FAILED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
             mHeartRateWorkThread = null;
         });
@@ -233,15 +237,24 @@ public final class CommService extends Service {
             Log.w(TAG, "startAccelerationMeasure: the last thread is still working, current task canceled");
             return;
         }
+
+        lockAwake();
         foregroundNotify();
+
         mAccelerationWorkThread = new Thread(() -> {
-            boolean success = mBand.startMeasureAcceleration((x, y, z) -> {
-                Intent i = new Intent(Constants.Action.BROADCAST_ACCELERATION)
-                        .putExtra(Constants.Extra.ACCELERATION_X, x)
-                        .putExtra(Constants.Extra.ACCELERATION_Y, y)
-                        .putExtra(Constants.Extra.ACCELERATION_Z, z);
-                LocalBroadcastManager.getInstance(this).sendBroadcast(i);
-            });
+            boolean success;
+            if (mBand.getState().isMeasuringAcceleration()) {
+                success = true;
+                Log.i(TAG, "startAccelerationMeasure: already measuring");
+            } else {
+                success = mBand.startMeasureAcceleration((x, y, z) -> {
+                   Intent i = new Intent(Constants.Action.BROADCAST_ACCELERATION)
+                            .putExtra(Constants.Extra.ACCELERATION_X, x)
+                            .putExtra(Constants.Extra.ACCELERATION_Y, y)
+                            .putExtra(Constants.Extra.ACCELERATION_Z, z);
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(i);
+                });
+            }
             Intent response = new Intent(Constants.Action.START_ACCELERATION)
                     .putExtra(Constants.Extra.STATUS, success ? Constants.Status.OK : Constants.Status.FAILED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(response);
@@ -251,6 +264,8 @@ public final class CommService extends Service {
     }
 
     private void stopAccelerationMeasure() {
+        if (mWakeLock != null && mWakeLock.isHeld()) mWakeLock.release();
+
         Log.i(TAG, "stopAccelerationMeasure: stopping acceleration measurement");
 
         // TODO: release lock
@@ -310,6 +325,14 @@ public final class CommService extends Service {
                 .setOngoing(true)
                 .build();
         startForeground(HR_MEASURE_NOTIFY, notification);
+    }
+
+    private void lockAwake() {
+        PowerManager powerMgr = (PowerManager) getSystemService(POWER_SERVICE);
+        if (powerMgr != null) {
+            mWakeLock = powerMgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "KeepAlive");
+            mWakeLock.acquire(WAKELOCK_TIMEOUT);
+        }
     }
 
     public static void startActionStateUpdate(Context context) {

@@ -43,7 +43,7 @@ public final class MiBand2 {
     private SparseArray<Consumer<byte[]>> mNoticeConsumers;
     private IntConsumer mHeartRateHandler;
     private TriFloatConsumer mAccelerationHandler;
-    private Timer mHeartRatePingTimer;
+    private Timer mHeartRatePingTimer, mAccelerationTimer;
 
     public MiBand2(@Nullable String macAddress, @Nullable byte[] key) {
         mBleDevice = macAddress == null
@@ -128,6 +128,8 @@ public final class MiBand2 {
 
     public void disconnect() {
         // TODO: stop working task
+        if (mState.isMeasuringHeartRate()) stopMeasureHeartRate();
+        if (mState.isMeasuringAcceleration()) stopMeasureAcceleration();
         BleManager.getInstance().disconnect(mBleDevice);
     }
 
@@ -142,34 +144,45 @@ public final class MiBand2 {
 
         if (!enableHeartRateContinuousMonitor()) {
             Log.e(TAG, "enableHeartRate: failed to enable heart rate continuous monitor");
+            return false;
         }
-//        turnOnRawDataNotify();
-//        enableAcceleration();
 
         enableHeartRatePing();
         return true;
     }
 
-    public void stopMeasureHeartRate() {
+    public boolean stopMeasureHeartRate() {
         Log.i(TAG, "stopMeasureHeartRate");
+        if (!mState.isBleConnected()) {
+            Log.i(TAG, "stopMeasureHeartRate: already disconnected");
+            return true;
+        }
         disableHeartRatePing();
-        disableHeartRateContinuousMonitor();
-        turnOffHeartRateNotify();
+        return disableHeartRateContinuousMonitor() && turnOffHeartRateNotify();
     }
 
     public boolean startMeasureAcceleration(TriFloatConsumer accelerationHandler) {
         mAccelerationHandler = accelerationHandler;
         if (!turnOnRawDataNotify()) return false;
-        if (!enableAcceleration()) return false;
-        return true;
+        mAccelerationTimer = TimerUtil.repeatPer(Protocol.Time.ACCELERATION_PERIOD, this::enableAcceleration);
+        return enableAcceleration();
     }
 
-    public boolean stopMeasureAcceleration() { // TODO
+    public boolean stopMeasureAcceleration() {
+        if (mAccelerationTimer != null) {
+            mAccelerationTimer.cancel();
+            mAccelerationTimer = null;
+        }
+        if (!mState.isBleConnected()) {
+            Log.i(TAG, "stopMeasureAcceleration: already disconnected");
+            return true;
+        }
         ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
         BleManager.getInstance().write(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
-                Protocol.ACCELERATION_STOP,
+                Protocol.Command.ACCELERATION_STOP,
                 new BleWriteCallback() {
                     @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                        mState.setAccelerationMeasuring(false);
                         waiter.ok();
                         Log.i(TAG, "stopMeasureAcceleration: succeeded");
                     }
@@ -181,102 +194,30 @@ public final class MiBand2 {
         return waiter.work();
     }
 
-    private boolean turnOnRawDataNotify() {
-        ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
-        BleManager.getInstance().notify(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_DATA,
-                new BleNotifyCallback() {
-                    @Override public void onNotifySuccess() {
-                        waiter.ok();
-                        Log.i(TAG, "turnOnRawDataNotify: succeeded");
-                    }
-                    @Override public void onNotifyFailure(BleException exception) {
-                        waiter.fail();
-                        Log.e(TAG, "turnOnRawDataNotify: failed");
-                    }
-                    @Override public void onCharacteristicChanged(byte[] data) {
-                        Log.i(TAG, "received raw data: length=" + data.length + ", data=" + BytesUtil.toHexStr(data));
-                        parseAcceleration(data);
-                    }
-                });
-        return waiter.work();
-    }
-
-    // see https://github.com/Freeyourgadget/Gadgetbridge/pull/703/files for details
-    private void parseAcceleration(byte[] value) {
-        if (value.length <= 2 || (value.length - 2) % 6 != 0) {
-            Log.w(TAG, ">>> parseAcceleration: got unexpected sensor data with length: " + value.length);
-            return;
-        }
-        float count = 0;
-        float x = 0, y = 0, z = 0;
-        for (int i = 2; i < value.length; i += 6, count += 1) {
-            x += (value[i]   | (value[i+1] << 8));
-            y += (value[i+2] | (value[i+3] << 8));
-            z += (value[i+4] | (value[i+5] << 8));
-        }
-        x /= count; y /= count; z /= count;
-        Log.i(TAG, String.format("parseAcceleration: x=%.3f, y=%.3f, z=%.3f, total=%.3f", x, y, z, Math.sqrt(x*x + y*y + z*z)));
-        if (mAccelerationHandler != null) mAccelerationHandler.accept(x, y, z);
-    }
-
-    // https://github.com/Freeyourgadget/Gadgetbridge/pull/894
-    private boolean enableAcceleration() {
-        ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
-        BleManager.getInstance().write(
-                mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
-                Protocol.ACCELERATION_INIT,
-                new BleWriteCallback() {
-                    @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
-                        waiter.ok();
-                        Log.i(TAG, "enableAcceleration step 1: succeeded");
-                    }
-                    @Override public void onWriteFailure(BleException exception) {
-                        waiter.fail();
-                        Log.e(TAG, "enableAcceleration step 1: failed");
-                    }
-                });
-        if (!waiter.work()) return false;
-
-        waiter.reset();
-        BleManager.getInstance().write(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
-                Protocol.ACCELERATION_START,
-                new BleWriteCallback() {
-                    @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
-                        waiter.ok();
-                        Log.i(TAG, "enableAcceleration step 2: succeeded");
-                    }
-                    @Override public void onWriteFailure(BleException exception) {
-                        waiter.fail();
-                        Log.i(TAG, "enableAcceleration step 2: failed");
-                    }
-                });
-        return waiter.work();
-    }
-
     private void initAuthNoticeConsumer() {
         mNoticeConsumers = new SparseArray<>();
-        mNoticeConsumers.put(Protocol.SEND_KEY_RESPONSE_OK, data -> {
+        mNoticeConsumers.put(Protocol.Response.SEND_KEY_OK, data -> {
             Log.i(TAG, "accept auth notice: key got");
             mState.setKeyGot(true);
         });
-        mNoticeConsumers.put(Protocol.SEND_KEY_RESPONSE_OOPS, data -> {
+        mNoticeConsumers.put(Protocol.Response.SEND_KEY_OOPS, data -> {
             Log.i(TAG, "accept auth notice: the band failed to receive the key");
             mState.setKeyGot(false);
         });
-        mNoticeConsumers.put(Protocol.RAND_RESPONSE_OK, data -> {
+        mNoticeConsumers.put(Protocol.Response.RAND_OK, data -> {
             Log.i(TAG, "accept auth notice: rand received");
             mRand = data;
             mState.setRandRequested(true);
         });
-        mNoticeConsumers.put(Protocol.RAND_RESPONSE_OOPS, data -> {
+        mNoticeConsumers.put(Protocol.Response.RAND_OOPS, data -> {
             Log.i(TAG, "accept auth notice: failed to receive rand");
             mState.setRandRequested(false);
         });
-        mNoticeConsumers.put(Protocol.AUTH_RESPONSE_OK, data -> {
+        mNoticeConsumers.put(Protocol.Response.AUTH_OK, data -> {
             Log.i(TAG, "accept auth notice: encrypted number matched");
             mState.setEncrypted(true);
         });
-        mNoticeConsumers.put(Protocol.AUTH_RESPONSE_OOPS, data -> {
+        mNoticeConsumers.put(Protocol.Response.AUTH_OOPS, data -> {
             Log.i(TAG, "accept auth notice: encrypted number did not match");
             mState.setEncrypted(false);
         });
@@ -331,7 +272,7 @@ public final class MiBand2 {
 
     private void sendKey() {
         BleManager.getInstance().write(mBleDevice, Protocol.Service.AUTH, Protocol.Characteristic.AUTH,
-                BytesUtil.combine(Protocol.SEND_KEY_CMD, mAuthKey),
+                BytesUtil.combine(Protocol.Command.SEND_KEY, mAuthKey),
                 new BleWriteCallback() {
                     @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
                         Log.i(TAG, "onWriteSuccess: wrote=" + BytesUtil.toHexStr(justWrite));
@@ -344,7 +285,7 @@ public final class MiBand2 {
 
     private void requestRand() {
         BleManager.getInstance().write(mBleDevice, Protocol.Service.AUTH, Protocol.Characteristic.AUTH,
-                Protocol.RAND_REQUEST,
+                Protocol.Command.RAND_REQUEST,
                 new BleWriteCallback() {
                     @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {}
                     @Override public void onWriteFailure(BleException exception) {
@@ -356,7 +297,7 @@ public final class MiBand2 {
     private void sendEncryptedRand() {
         byte[] encrypted = aesEncrypt(mRand);
         BleManager.getInstance().write(mBleDevice, Protocol.Service.AUTH, Protocol.Characteristic.AUTH,
-                BytesUtil.combine(Protocol.SEND_ENCRYPTED_CMD, encrypted),
+                BytesUtil.combine(Protocol.Command.SEND_ENCRYPTED, encrypted),
                 new BleWriteCallback() {
                     @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {}
                     @Override public void onWriteFailure(BleException exception) {
@@ -450,7 +391,7 @@ public final class MiBand2 {
         BleManager.getInstance().write(
                 mBleDevice,
                 Protocol.Service.HEART_RATE, Protocol.Characteristic.HEART_RATE_CONTROL,
-                Protocol.HEART_START_CONTIUOUS,
+                Protocol.Command.HEART_START_CONTINUOUS,
                 new BleWriteCallback() {
                     @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
                         waiter.ok();
@@ -470,11 +411,11 @@ public final class MiBand2 {
         BleManager.getInstance().write(
                 mBleDevice,
                 Protocol.Service.HEART_RATE, Protocol.Characteristic.HEART_RATE_CONTROL,
-                Protocol.HEART_STOP_CONTINUOUS,
+                Protocol.Command.HEART_STOP_CONTINUOUS,
                 new BleWriteCallback() {
                     @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
-                        waiter.ok();
                         mState.setHeartMeasuring(false);
+                        waiter.ok();
                         Log.i(TAG, "disableHeartRateContinuousMonitor: succeed");
                     }
                     @Override public void onWriteFailure(BleException exception) {
@@ -486,12 +427,12 @@ public final class MiBand2 {
     }
 
     private void enableHeartRatePing() {
-        mHeartRatePingTimer = TimerUtil.repeatPer(Protocol.HEART_KEEP_ALIVE_PERIOD, () -> {
+        mHeartRatePingTimer = TimerUtil.repeatPer(Protocol.Time.HEART_KEEP_ALIVE_PERIOD, () -> {
             Log.i(TAG, "pinging heart rate monitor...");
             BleManager.getInstance().write(
                     mBleDevice,
                     Protocol.Service.HEART_RATE, Protocol.Characteristic.HEART_RATE_CONTROL,
-                    Protocol.HEART_KEEP_ALIVE,
+                    Protocol.Command.HEART_KEEP_ALIVE,
                     new BleWriteCallback() {
                         @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
                             Log.i(TAG, "pingHeartRate :)");
@@ -513,4 +454,81 @@ public final class MiBand2 {
         }
     }
 
+    // see https://github.com/Freeyourgadget/Gadgetbridge/pull/703/files for details
+    private void parseAcceleration(byte[] value) {
+        if (value.length <= 2 || (value.length - 2) % 6 != 0) {
+            Log.w(TAG, "parseAcceleration: got unexpected sensor data with length: " + value.length);
+            return;
+        }
+        float count = 0;
+        float x = 0, y = 0, z = 0;
+        for (int i = 2; i < value.length; i += 6, count += 1) {
+            x += (value[i]   | (value[i+1] << 8));
+            y += (value[i+2] | (value[i+3] << 8));
+            z += (value[i+4] | (value[i+5] << 8));
+        }
+        x /= count; y /= count; z /= count;
+        Log.i(TAG, String.format("parseAcceleration: x=%.3f, y=%.3f, z=%.3f, total=%.3f", x, y, z, Math.sqrt(x*x + y*y + z*z)));
+        if (mAccelerationHandler != null) mAccelerationHandler.accept(x, y, z);
+    }
+
+    private boolean turnOnRawDataNotify() {
+        ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
+        BleManager.getInstance().notify(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_DATA,
+                new BleNotifyCallback() {
+                    @Override public void onNotifySuccess() {
+                        mState.setRawNotify(true);
+                        waiter.ok();
+                        Log.i(TAG, "turnOnRawDataNotify: succeeded");
+                    }
+                    @Override public void onNotifyFailure(BleException exception) {
+                        mState.setRawNotify(false);
+                        waiter.fail();
+                        Log.e(TAG, "turnOnRawDataNotify: failed");
+                    }
+                    @Override public void onCharacteristicChanged(byte[] data) {
+                        mState.setAccelerationMeasuring(true);
+                        Log.i(TAG, "received raw data: length=" + data.length + ", data=" + BytesUtil.toHexStr(data));
+                        parseAcceleration(data);
+                    }
+                });
+        return waiter.work();
+    }
+
+    // https://github.com/Freeyourgadget/Gadgetbridge/pull/894
+    private boolean enableAcceleration() {
+        ResponseWaiter waiter = new ResponseWaiter(REFRESH_TIMEOUT);
+        BleManager.getInstance().write(
+                mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
+                Protocol.Command.ACCELERATION_INIT,
+                new BleWriteCallback() {
+                    @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                        waiter.ok();
+                        Log.i(TAG, "enableAcceleration step 1: succeeded");
+                    }
+                    @Override public void onWriteFailure(BleException exception) {
+                        mState.setAccelerationMeasuring(false);
+                        waiter.fail();
+                        Log.e(TAG, "enableAcceleration step 1: failed");
+                    }
+                });
+        if (!waiter.work()) return false;
+
+        waiter.reset();
+        BleManager.getInstance().write(mBleDevice, Protocol.Service.BASIC, Protocol.Characteristic.SENSOR_CONTROL,
+                Protocol.Command.ACCELERATION_START,
+                new BleWriteCallback() {
+                    @Override public void onWriteSuccess(int current, int total, byte[] justWrite) {
+                        mState.setAccelerationMeasuring(true);
+                        waiter.ok();
+                        Log.i(TAG, "enableAcceleration step 2: succeeded");
+                    }
+                    @Override public void onWriteFailure(BleException exception) {
+                        mState.setAccelerationMeasuring(false);
+                        waiter.fail();
+                        Log.i(TAG, "enableAcceleration step 2: failed");
+                    }
+                });
+        return waiter.work();
+    }
 }

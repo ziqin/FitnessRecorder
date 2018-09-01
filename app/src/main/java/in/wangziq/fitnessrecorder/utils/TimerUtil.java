@@ -23,7 +23,7 @@ public final class TimerUtil {
             public void run() {
                 task.run();
             }
-        }, 0, period);
+        }, period, period);
         return timer;
     }
 }
