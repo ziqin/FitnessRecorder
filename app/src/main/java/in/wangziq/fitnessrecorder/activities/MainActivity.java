@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.clj.fastble.BleManager;
@@ -49,7 +48,7 @@ public final class MainActivity extends AppCompatActivity {
         mBinding.setHeartRateTransaction(mHeartRateTransaction);
         mBinding.setAccelerationTransaction(mAccelerationTransaction);
 
-        mFabCircle = fabProgressCircleHack(mBinding.fabProgressCircle);
+        mFabCircle = mBinding.fabProgressCircle;
 
         mMessenger = new Messenger(this);
         mMessenger.addHandler(mStateUpdateRequest);
@@ -114,7 +113,7 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void requestPair(String macAddress) {
-        // if (!checkAndEnableBt()) return; // seems meaningless
+        mFabCircle.show();
         CommService.startActionPair(this, macAddress);
     }
 
@@ -196,7 +195,7 @@ public final class MainActivity extends AppCompatActivity {
             if (busy) return;
             mFabCircle.show();
             busy = true;
-            CommService.startActionDisconnect(MainActivity.this);
+            CommService.startActionDisconnect(MainActivity.this, true);
             Log.i(TAG, "ConnectTransaction.stop: disconnect");
         }
 
@@ -338,20 +337,6 @@ public final class MainActivity extends AppCompatActivity {
             }
         }
     };
-
-    // Fix FABProgressCircle for CoordinatorLayout
-    // https://github.com/JorgeCastilloPrz/FABProgressCircle/issues/6#issuecomment-174414979
-    private static FABProgressCircle fabProgressCircleHack(FABProgressCircle circle) {
-        circle.addOnLayoutChangeListener((view, left, top, right, bottom,
-                                          oldLeft, oldTop,oldRight, oldBottom) -> {
-            view.findViewById(R.id.completeFabIcon);
-            ImageView imgView = view.findViewById(R.id.completeFabIcon);
-            if ((imgView != null) && (imgView.getScaleType() != ImageView.ScaleType.CENTER_INSIDE)) {
-                imgView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            }
-        });
-        return circle;
-    }
 
 
     public static abstract class Request extends Messenger.MessageHandler {

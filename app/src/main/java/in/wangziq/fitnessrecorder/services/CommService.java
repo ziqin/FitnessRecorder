@@ -52,7 +52,7 @@ public final class CommService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "onDestroy");
-        disconnectSync();
+        disconnect();
         stopForeground(true);
     }
 
@@ -80,7 +80,7 @@ public final class CommService extends Service {
                 connect();
                 break;
             case Constants.Action.DISCONNECT:
-                disconnect();
+                disconnect(intent);
                 break;
             case Constants.Action.START_HEART_RATE:
                 startHeartRateMeasure();
@@ -129,7 +129,7 @@ public final class CommService extends Service {
             Log.i(TAG, "pairAndConnect: the last thread is still working, current task canceled");
             return;
         }
-        disconnectSync();
+        disconnect();
         mBand = createMiBandInstanceWithCallback(macAddress, null);
         mHeartRateWorkThread = new Thread(() -> {
             boolean success = mBand.connect(true);
@@ -172,16 +172,20 @@ public final class CommService extends Service {
         mHeartRateWorkThread.start();
     }
 
-    private void disconnectSync() {
+    // synchronized
+    private void disconnect() {
         if (mBand.getState().isBleConnected()) mBand.disconnect();
     }
 
-    private void disconnect() {
+    // asynchronized
+    private void disconnect(Intent i) {
         new Thread(() -> {
-            disconnectSync();
-            Intent response = new Intent(Constants.Action.DISCONNECT)
-                    .putExtra(Constants.Extra.STATUS, Constants.Status.OK);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(response);
+            disconnect();
+            if (i.getBooleanExtra(Constants.Extra.WITH_RESPONSE, false)) {
+                Intent response = new Intent(Constants.Action.DISCONNECT)
+                        .putExtra(Constants.Extra.STATUS, Constants.Status.OK);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(response);
+            }
         }).start();
     }
 
@@ -253,7 +257,9 @@ public final class CommService extends Service {
                 Log.i(TAG, "startAccelerationMeasure: already measuring");
             } else {
                 success = mBand.startMeasureAcceleration((x, y, z) -> {
-                   Intent i = new Intent(Constants.Action.BROADCAST_ACCELERATION)
+                    mDatabase.insertAcceleration(x, y, z);
+
+                    Intent i = new Intent(Constants.Action.BROADCAST_ACCELERATION)
                             .putExtra(Constants.Extra.ACCELERATION_X, x)
                             .putExtra(Constants.Extra.ACCELERATION_Y, y)
                             .putExtra(Constants.Extra.ACCELERATION_Z, z);
@@ -358,8 +364,10 @@ public final class CommService extends Service {
         context.startService(i);
     }
 
-    public static void startActionDisconnect(Context context) {
-        Intent i = new Intent(context, CommService.class).setAction(Constants.Action.DISCONNECT);
+    public static void startActionDisconnect(Context context, boolean withResponse) {
+        Intent i = new Intent(context, CommService.class)
+                .setAction(Constants.Action.DISCONNECT)
+                .putExtra(Constants.Extra.WITH_RESPONSE, withResponse);
         context.startService(i);
     }
 

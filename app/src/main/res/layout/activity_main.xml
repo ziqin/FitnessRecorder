@@ -5,65 +5,49 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-
         <import type="android.view.View" />
 
-        <variable
-            name="connected"
-            type="boolean" />
+        <variable name="connected" type="boolean" />
+        <variable name="heartRate" type="int" />
+        <variable name="accelerationX" type="float" />
+        <variable name="accelerationY" type="float" />
+        <variable name="accelerationZ" type="float" />
 
-        <variable
-            name="heartRate"
-            type="int" />
-
-        <variable
-            name="accelerationX"
-            type="float" />
-
-        <variable
-            name="accelerationY"
-            type="float" />
-
-        <variable
-            name="accelerationZ"
-            type="float" />
-
-        <variable
-            name="connectTransaction"
-            type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
-
-        <variable
-            name="heartRateTransaction"
-            type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
-
-        <variable
-            name="accelerationTransaction"
-            type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+        <variable name="connectTransaction" type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+        <variable name="heartRateTransaction" type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+        <variable name="accelerationTransaction" type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
     </data>
 
+    <!--<RelativeLayout-->
     <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.github.jorgecastilloprz.FABProgressCircle
-            android:id="@+id/fab_progress_circle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:elevation="10dp"
-            app:arcColor="@color/purple"
+        <RelativeLayout
             app:layout_anchor="@id/control_panel"
             app:layout_anchorGravity="top|start"
-            app:reusable="true">
+            android:elevation="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
 
-            <android.support.design.widget.FloatingActionButton
-                android:id="@+id/fab"
+            <com.github.jorgecastilloprz.FABProgressCircle
+                android:id="@+id/fab_progress_circle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_margin="32dp"
-                android:onClick="@{() -> connected ? connectTransaction.stop() : connectTransaction.start()}"
-                android:src="@{connected ? @drawable/ic_bluetooth_connected_white_24dp : @drawable/ic_bluetooth_disabled_white_24dp}" />
+                app:arcColor="@color/purple"
+                app:reusable="true">
 
-        </com.github.jorgecastilloprz.FABProgressCircle>
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/fab"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="32dp"
+                    android:onClick="@{() -> connected ? connectTransaction.stop() : connectTransaction.start()}"
+                    android:src="@{connected ? @drawable/ic_bluetooth_connected_white_24dp : @drawable/ic_bluetooth_disabled_white_24dp}" />
+
+            </com.github.jorgecastilloprz.FABProgressCircle>
+
+        </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="match_parent"

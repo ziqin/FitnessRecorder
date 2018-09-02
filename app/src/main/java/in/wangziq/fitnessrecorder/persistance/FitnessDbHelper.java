@@ -35,4 +35,19 @@ public final class FitnessDbHelper extends SQLiteOpenHelper {
         Log.i(TAG, "createHeartRateDb: created successfully");
     }
 
+    private static void createAccelerationDb(SQLiteDatabase db) {
+        final String ddl = String.format("create table %s (" +
+                "%s datetime primary key default current_timestamp, " +
+                "%s real not null, " +
+                "%s real not null, " +
+                "%s real not null);",
+                FitnessDbSchema.AccelerationTable.NAME,
+                FitnessDbSchema.AccelerationTable.Cols.timestamp,
+                FitnessDbSchema.AccelerationTable.Cols.x,
+                FitnessDbSchema.AccelerationTable.Cols.y,
+                FitnessDbSchema.AccelerationTable.Cols.z);
+        db.execSQL(ddl);
+        Log.i(TAG, "createAccelerationDb: created successfully");
+    }
+
 }

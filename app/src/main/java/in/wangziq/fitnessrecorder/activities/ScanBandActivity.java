@@ -56,9 +56,7 @@ public final class ScanBandActivity extends AppCompatActivity {
         devicesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         devicesRecyclerView.setAdapter(mDevicesInfoAdapter);
 
-        CommService.startActionDisconnect(this);
-//        new Handler().postDelayed(this::bleScan, 666);
-//        requestLocationPermissionAndScanBt();
+        CommService.startActionDisconnect(this, false);
         new Handler().postDelayed(this::requestLocationPermissionAndScanBt, 500);
     }
 

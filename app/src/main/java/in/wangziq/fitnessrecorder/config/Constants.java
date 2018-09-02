@@ -22,6 +22,7 @@ public final class Constants {
         public static final String KEY = "extra.data.KEY";
         public static final String STATE = "extra.data.STATE";
         public static final String HEART_RATE = "extra.data.HEART_RATE";
+        public static final String WITH_RESPONSE = "extra.data.WITH_RESPONSE";
         public static final String STATUS = "extra.response.STATUS";
         public static final String ACCELERATION_X = "extra.data.acceleration_x";
         public static final String ACCELERATION_Y = "extra.data.acceleration_y";

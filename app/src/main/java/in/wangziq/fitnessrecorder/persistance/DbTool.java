@@ -22,4 +22,13 @@ public final class DbTool {
         Log.d(TAG, "insertHeartRate: inserted " + heartRate);
     }
 
+    public void insertAcceleration(float x, float y, float z) {
+        ContentValues values = new ContentValues();
+        values.put(FitnessDbSchema.AccelerationTable.Cols.x, x);
+        values.put(FitnessDbSchema.AccelerationTable.Cols.y, y);
+        values.put(FitnessDbSchema.AccelerationTable.Cols.z, z);
+        mHeartRateDb.insert(FitnessDbSchema.AccelerationTable.NAME, null, values);
+        Log.d(TAG, String.format("insertAcceleration: inserted (x=%f, y=%f, z=%f)", x, y, z));
+    }
+
 }
