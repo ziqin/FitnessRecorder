@@ -4,14 +4,16 @@
 
     <string name="toast_not_support_ble">Your device doesn\'t support BLE!</string>
     <string name="toast_have_to_enable_bt">You have to enable Bluetooth!</string>
-    <string name="toast_bt_enabled">Bluetooth Enabled</string>
-    <string name="toast_pair_ok">Paired successfully!</string>
+    <string name="toast_bt_enabled">Bluetooth enabled.</string>
+    <string name="toast_pair_ok">Paired successfully.</string>
     <string name="toast_pair_fail">Failed to pair!</string>
-    <string name="toast_connect_ok">Connected successfully!</string>
+    <string name="toast_connect_ok">Connected successfully.</string>
     <string name="toast_connect_fail">Failed to connect!</string>
+    <string name="toast_disconnect_ok">Disconnected.</string>
+    <string name="toast_disconnect_fail">Failed to disconnect!</string>
     <string name="toast_export_state_fail">Failed to export database: external storage unavailable!</string>
     <string name="toast_export_copy_fail">Failed to export database: error occurred when copying the file!</string>
-    <string name="toast_export_succeed">Database exported successfully!</string>
+    <string name="toast_export_succeed">Database exported successfully.</string>
     <string name="toast_need_location_permission">Location service permission is required for scanning MI Band!</string>
     <string name="toast_need_write_external">To export data, writing external storage is required!</string>
 

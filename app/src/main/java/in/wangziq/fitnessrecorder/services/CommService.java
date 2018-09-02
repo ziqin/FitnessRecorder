@@ -177,7 +177,12 @@ public final class CommService extends Service {
     }
 
     private void disconnect() {
-        new Thread(this::disconnectSync).start();
+        new Thread(() -> {
+            disconnectSync();
+            Intent response = new Intent(Constants.Action.DISCONNECT)
+                    .putExtra(Constants.Extra.STATUS, Constants.Status.OK);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(response);
+        }).start();
     }
 
     private void startHeartRateMeasure() {

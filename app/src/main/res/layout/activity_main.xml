@@ -1,25 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<layout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools" >
+    xmlns:tools="http://schemas.android.com/tools">
 
     <data>
+
         <import type="android.view.View" />
 
         <variable
             name="connected"
             type="boolean" />
+
         <variable
             name="heartRate"
             type="int" />
+
         <variable
             name="accelerationX"
             type="float" />
+
         <variable
             name="accelerationY"
             type="float" />
+
         <variable
             name="accelerationZ"
             type="float" />
@@ -27,9 +31,11 @@
         <variable
             name="connectTransaction"
             type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+
         <variable
             name="heartRateTransaction"
             type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
+
         <variable
             name="accelerationTransaction"
             type="in.wangziq.fitnessrecorder.activities.MainActivity.Transaction" />
@@ -39,57 +45,62 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <android.support.design.widget.FloatingActionButton
-            android:onClick="@{() -> connected ? connectTransaction.stop() : connectTransaction.start()}"
+        <com.github.jorgecastilloprz.FABProgressCircle
+            android:id="@+id/fab_progress_circle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="32dp"
-            android:src="@drawable/ic_bluetooth_searching_white_48dp"
+            android:elevation="10dp"
+            app:arcColor="@color/purple"
             app:layout_anchor="@id/control_panel"
-            app:layout_anchorGravity="top|start" />
+            app:layout_anchorGravity="top|start"
+            app:reusable="true">
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="32dp"
+                android:onClick="@{() -> connected ? connectTransaction.stop() : connectTransaction.start()}"
+                android:src="@{connected ? @drawable/ic_bluetooth_connected_white_24dp : @drawable/ic_bluetooth_disabled_white_24dp}" />
+
+        </com.github.jorgecastilloprz.FABProgressCircle>
 
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <!-- information view -->
-            <LinearLayout
-                android:visibility="@{connected ? View.VISIBLE : View.INVISIBLE}"
-                android:padding="16dp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <!-- Heart rate view -->
-                <TextView
+                <!-- information view -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:orientation="vertical"
                     android:padding="16dp"
-                    android:text="@{Integer.toString(heartRate)}"
-                    android:visibility="@{heartRateTransaction.running ? (heartRate > 0 ? View.VISIBLE : View.INVISIBLE) : View.GONE}"
-                    android:textAlignment="center"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Display4"
-                    tools:text="65" />
+                    android:visibility="@{connected ? View.VISIBLE : View.INVISIBLE}">
 
-                <!-- Acceleration view -->
-                <TextView
-                    android:text="@{String.format(`x = %+.2f\ny = %+.2f\nz = %+.2f`, accelerationX, accelerationY, accelerationZ)}"
-                    android:visibility="@{accelerationTransaction.running ? View.VISIBLE : View.GONE}"
-                    android:textAlignment="center"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-                    android:padding="16dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    <!-- Heart rate view -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:text="@{Integer.toString(heartRate)}"
+                        android:textAlignment="center"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Display4"
+                        android:visibility="@{heartRateTransaction.running ? (heartRate > 0 ? View.VISIBLE : View.INVISIBLE) : View.GONE}"
+                        tools:text="65" />
 
-                <!--<TextView-->
-                    <!--android:id="@+id/time_text"-->
-                    <!--android:layout_width="match_parent"-->
-                    <!--android:layout_height="wrap_content"-->
-                    <!--android:textAlignment="center"-->
-                    <!--android:textAppearance="@style/TextAppearance.AppCompat.Large"-->
-                    <!--tools:text="09:30:22" />-->
-            </LinearLayout>
+                    <!--Acceleration -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+
+                        android:text="@{String.format(`x = %+6.1f\ny = %+6.1f\nz = %+6.1f`, accelerationX, accelerationY, accelerationZ)}"
+                        android:textAlignment="center"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                        android:typeface="monospace"
+                        android:visibility="@{accelerationTransaction.running ? View.VISIBLE : View.GONE}" />
+                </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/control_panel"
@@ -99,53 +110,55 @@
                 android:background="@color/white"
                 android:elevation="10dp"
                 android:orientation="vertical"
-                android:paddingStart="32dp"
+                android:paddingBottom="16dp"
                 android:paddingEnd="32dp"
-                android:paddingTop="40dp"
-                android:paddingBottom="16dp" >
+                android:paddingStart="32dp"
+                android:paddingTop="40dp">
 
                 <!-- Heart rate control -->
                 <LinearLayout
-                    android:visibility="@{connected ? View.VISIBLE : View.GONE}"
-                    android:layout_marginBottom="8dp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
                     android:orientation="horizontal">
+
                     <TextView
-                        android:text="@{heartRateTransaction.running ? @string/switch_heart_rate_on : @string/switch_heart_rate_off}"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="2" />
+                        android:layout_weight="2"
+                        android:text="@{heartRateTransaction.running ? @string/switch_heart_rate_on : @string/switch_heart_rate_off}" />
+
                     <Switch
-                        android:enabled="@{connected}"
-                        android:checked="@{heartRateTransaction.running}"
-                        android:onCheckedChanged="@{(cb, checked) -> checked ? heartRateTransaction.start() : heartRateTransaction.stop()}"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:checked="@{heartRateTransaction.running}"
+                        android:enabled="@{connected}"
+                        android:onCheckedChanged="@{(cb, checked) -> checked ? heartRateTransaction.start() : heartRateTransaction.stop()}"
                         android:switchMinWidth="56dp" />
                 </LinearLayout>
 
                 <!-- Acceleration control -->
                 <LinearLayout
-                    android:visibility="@{connected ? View.VISIBLE : View.GONE}"
-                    android:layout_marginBottom="8dp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
                     android:orientation="horizontal">
+
                     <TextView
-                        android:text="@{accelerationTransaction.running ? @string/switch_acceleration_on : @string/switch_acceleration_off}"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="2" />
+                        android:layout_weight="2"
+                        android:text="@{accelerationTransaction.running ? @string/switch_acceleration_on : @string/switch_acceleration_off}" />
+
                     <Switch
                         android:id="@+id/switch_acceleration"
-                        android:enabled="@{connected}"
-                        android:checked="@{accelerationTransaction.running}"
-                        android:onCheckedChanged="@{(cb, checked) -> checked ? accelerationTransaction.start() : accelerationTransaction.stop()}"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:checked="@{accelerationTransaction.running}"
+                        android:enabled="@{connected}"
+                        android:onCheckedChanged="@{(cb, checked) -> checked ? accelerationTransaction.start() : accelerationTransaction.stop()}"
                         android:switchMinWidth="56dp" />
                 </LinearLayout>
             </LinearLayout>

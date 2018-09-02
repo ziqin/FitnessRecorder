@@ -6,14 +6,17 @@ import android.databinding.DataBindingUtil;
 import android.databinding.ObservableBoolean;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.clj.fastble.BleManager;
+import com.github.jorgecastilloprz.FABProgressCircle;
 
 import in.wangziq.fitnessrecorder.config.Constants;
 import in.wangziq.fitnessrecorder.R;
@@ -32,18 +35,21 @@ public final class MainActivity extends AppCompatActivity {
     private String mMacAddress;
     private byte[] mAuthKey;
 
-    private ActivityMainBinding mData;
+    private ActivityMainBinding mBinding;
     private Messenger mMessenger;
+    private FABProgressCircle mFabCircle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mData = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        mBinding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        mData.setConnectTransaction(mConnectTransaction);
-        mData.setHeartRateTransaction(mHeartRateTransaction);
-        mData.setAccelerationTransaction(mAccelerationTransaction);
+        mBinding.setConnectTransaction(mConnectTransaction);
+        mBinding.setHeartRateTransaction(mHeartRateTransaction);
+        mBinding.setAccelerationTransaction(mAccelerationTransaction);
+
+        mFabCircle = fabProgressCircleHack(mBinding.fabProgressCircle);
 
         mMessenger = new Messenger(this);
         mMessenger.addHandler(mStateUpdateRequest);
@@ -116,8 +122,11 @@ public final class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         switch (requestCode) {
             case REQUEST_ENABLE_BT:
-                if (resultCode == RESULT_OK) Toast.makeText(this, R.string.toast_bt_enabled, Toast.LENGTH_SHORT).show();
-                else Toast.makeText(this, R.string.toast_have_to_enable_bt, Toast.LENGTH_SHORT).show();
+                if (resultCode == RESULT_OK) {
+                    Snackbar.make(mBinding.getRoot(), R.string.toast_bt_enabled, Snackbar.LENGTH_SHORT).show();
+                } else {
+                    Snackbar.make(mBinding.getRoot(), R.string.toast_have_to_enable_bt, Snackbar.LENGTH_SHORT).show();
+                }
                 break;
 
             case REQUEST_SCAN_BAND:
@@ -150,13 +159,15 @@ public final class MainActivity extends AppCompatActivity {
             BandState state = new BandState(response.getIntExtra(Constants.Extra.STATE, BandState.DEFAULT_VALUE));
             Log.i(TAG, String.format("StateUpdateRequest.handleResponse: mac=%s, authKey=%s, state=%s",
                     mMacAddress, BytesUtil.toHexStr(mAuthKey), state));
-            mData.setConnected(state.isEncrypted());
+            mBinding.setConnected(state.isEncrypted());
             mHeartRateTransaction.running.set(state.isMeasuringHeartRate());
             mAccelerationTransaction.running.set(state.isMeasuringAcceleration());
         }
     };
 
     private Transaction mConnectTransaction = new Transaction() {
+        private boolean busy = false;
+
         @Override public String[] getActions() {
             return new String[] {
                     Constants.Action.PAIR,
@@ -166,17 +177,25 @@ public final class MainActivity extends AppCompatActivity {
         }
 
         @Override public void start() {
+            if (busy) return;
             if (!checkAndEnableBt()) {
                 Log.w(TAG, "ConnectTransaction.start: bluetooth disabled");
                 return;
             }
             if (mMacAddress == null) requestScan();
-            else if (mAuthKey == null) CommService.startActionPair(MainActivity.this, mMacAddress);
-            else CommService.startActionConnect(MainActivity.this);
+            else {
+                mFabCircle.show();
+                busy = true;
+                if (mAuthKey == null) CommService.startActionPair(MainActivity.this, mMacAddress);
+                else CommService.startActionConnect(MainActivity.this);
+            }
             Log.i(TAG, "ConnectTransaction.start: mac=" + mMacAddress + ", authKey=" + BytesUtil.toHexStr(mAuthKey));
         }
 
         @Override public void stop() {
+            if (busy) return;
+            mFabCircle.show();
+            busy = true;
             CommService.startActionDisconnect(MainActivity.this);
             Log.i(TAG, "ConnectTransaction.stop: disconnect");
         }
@@ -187,10 +206,32 @@ public final class MainActivity extends AppCompatActivity {
             switch (response.getAction()) {
                 case Constants.Action.PAIR:
                 case Constants.Action.CONNECT:
-                    if (status == Constants.Status.OK) mData.setConnected(true);
+                    if (status == Constants.Status.OK) {
+                        mFabCircle.beginFinalAnimation();
+                        mFabCircle.attachListener(() -> {
+                            mBinding.setConnected(true);
+                            busy = false;
+                            Snackbar.make(mBinding.getRoot(), R.string.toast_connect_ok, Snackbar.LENGTH_SHORT).show();
+                        });
+                    } else {
+                        busy = false;
+                        mFabCircle.hide();
+                        Snackbar.make(mBinding.getRoot(), R.string.toast_connect_fail, Snackbar.LENGTH_SHORT).show();
+                    }
                     break;
                 case Constants.Action.DISCONNECT:
-                    if (status == Constants.Status.OK) mData.setConnected(false);
+                    if (status == Constants.Status.OK) {
+                        mFabCircle.beginFinalAnimation();
+                        mFabCircle.attachListener(() -> {
+                            busy = false;
+                            mBinding.setConnected(false);
+                            Snackbar.make(mBinding.getRoot(), R.string.toast_disconnect_ok, Snackbar.LENGTH_SHORT).show();
+                        });
+                    } else {
+                        busy = false;
+                        mFabCircle.hide();
+                        Snackbar.make(mBinding.getRoot(), R.string.toast_disconnect_fail, Snackbar.LENGTH_SHORT).show();
+                    }
                     break;
             }
         }
@@ -222,7 +263,7 @@ public final class MainActivity extends AppCompatActivity {
             switch (response.getAction()) {
                 case Constants.Action.BROADCAST_HEART_RATE:
                     int heartRate = response.getIntExtra(Constants.Extra.HEART_RATE, -1);
-                    mData.setHeartRate(heartRate);
+                    mBinding.setHeartRate(heartRate);
                     Log.i(TAG, "HeartRateTransaction.handleResponse: got heart rate = " + heartRate);
                     break;
                 case Constants.Action.START_HEART_RATE:
@@ -230,13 +271,16 @@ public final class MainActivity extends AppCompatActivity {
                     Log.i(TAG, "HeartRateTransaction.handleResponse: START_HEART_RATE status=" + status);
                     boolean success = status == Constants.Status.OK;
                     running.set(success);
-                    if (!success) Toast.makeText(MainActivity.this, R.string.toast_heart_rate_on_failed, Toast.LENGTH_SHORT).show();
+                    if (!success)
+                        Snackbar.make(mBinding.getRoot(), R.string.toast_heart_rate_on_failed, Snackbar.LENGTH_SHORT).show();
                     break;
                 case Constants.Action.STOP_HEART_RATE:
                     status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
                     Log.i(TAG, "HeartRateTransaction.handleResponse: START_HEART_RATE status=" + status);
-                    if (status == Constants.Status.OK) running.set(false);
-                    else Toast.makeText(MainActivity.this, R.string.toast_heart_rate_off_failed, Toast.LENGTH_SHORT).show();
+                    if (status == Constants.Status.OK)
+                        running.set(false);
+                    else
+                        Snackbar.make(mBinding.getRoot(), R.string.toast_heart_rate_off_failed, Snackbar.LENGTH_SHORT).show();
                     break;
             }
         }
@@ -272,25 +316,42 @@ public final class MainActivity extends AppCompatActivity {
                     float x = response.getFloatExtra(Constants.Extra.ACCELERATION_X, 0);
                     float y = response.getFloatExtra(Constants.Extra.ACCELERATION_Y, 0);
                     float z = response.getFloatExtra(Constants.Extra.ACCELERATION_Z, 0);
-                    mData.setAccelerationX(x);
-                    mData.setAccelerationY(y);
-                    mData.setAccelerationZ(z);
+                    mBinding.setAccelerationX(x);
+                    mBinding.setAccelerationY(y);
+                    mBinding.setAccelerationZ(z);
                     Log.i(TAG, "AccelerationTransaction.handleResponse: x=" + x + " y=" + y + " z=" + z);
                     break;
                 case Constants.Action.START_ACCELERATION:
                     status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
                     boolean success = status == Constants.Status.OK;
                     running.set(success);
-                    if (!success) Toast.makeText(MainActivity.this, R.string.toast_acceleration_on_failed, Toast.LENGTH_SHORT).show();
+                    if (!success)
+                        Snackbar.make(mBinding.getRoot(), R.string.toast_acceleration_on_failed, Snackbar.LENGTH_SHORT).show();
                     break;
                 case Constants.Action.STOP_ACCELERATION:
                     status = response.getIntExtra(Constants.Extra.STATUS, Constants.Status.UNKNOWN);
-                    if (status == Constants.Status.OK) running.set(false);
-                    else Toast.makeText(MainActivity.this, R.string.toast_acceleration_off_failed, Toast.LENGTH_SHORT).show();
+                    if (status == Constants.Status.OK)
+                        running.set(false);
+                    else
+                        Snackbar.make(mBinding.getRoot(), R.string.toast_acceleration_off_failed, Snackbar.LENGTH_SHORT).show();
                     break;
             }
         }
     };
+
+    // Fix FABProgressCircle for CoordinatorLayout
+    // https://github.com/JorgeCastilloPrz/FABProgressCircle/issues/6#issuecomment-174414979
+    private static FABProgressCircle fabProgressCircleHack(FABProgressCircle circle) {
+        circle.addOnLayoutChangeListener((view, left, top, right, bottom,
+                                          oldLeft, oldTop,oldRight, oldBottom) -> {
+            view.findViewById(R.id.completeFabIcon);
+            ImageView imgView = view.findViewById(R.id.completeFabIcon);
+            if ((imgView != null) && (imgView.getScaleType() != ImageView.ScaleType.CENTER_INSIDE)) {
+                imgView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            }
+        });
+        return circle;
+    }
 
 
     public static abstract class Request extends Messenger.MessageHandler {
