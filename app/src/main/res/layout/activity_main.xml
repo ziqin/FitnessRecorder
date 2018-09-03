@@ -64,6 +64,7 @@
 
                     <!-- Heart rate view -->
                     <TextView
+                        android:contentDescription="@string/label_heart_rate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"
@@ -75,6 +76,7 @@
 
                     <!--Acceleration -->
                     <TextView
+                        android:contentDescription="@string/label_table_acceleration"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"

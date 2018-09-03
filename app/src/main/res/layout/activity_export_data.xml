@@ -1,29 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="16dp"
-    tools:context=".activities.ExportDataActivity">
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <TextView
-        android:id="@+id/export_tip"
-        android:layout_margin="16dp"
-        android:layout_marginBottom="48dp"
+    <data>
+        <variable
+            name="exportHeartRate"
+            type="boolean" />
+        <variable
+            name="exportAcceleration"
+            type="boolean" />
+    </data>
+
+    <RelativeLayout
+        android:padding="32dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAlignment="center"
-        tools:text="Your data will be exported to\n/mount/sdcard/Downloads/Fitness" />
+        android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/btn_export"
-        android:text="@string/btn_export"
-        android:padding="16dp"
-        android:layout_margin="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-</LinearLayout>
+            <TextView
+                android:id="@+id/export_tip"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="32dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAlignment="center"
+                tools:text="Your data will be exported to\n/mount/sdcard/Downloads/Fitness" />
+
+            <LinearLayout
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:text="Select data:"
+                    android:labelFor="@id/select_data"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <LinearLayout
+                    android:id="@+id/select_data"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <CheckBox
+                        android:id="@+id/checkbox_heart_rate"
+                        android:checked="@={exportHeartRate}"
+                        android:layout_weight="1"
+                        android:text="@string/label_table_heart_rate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <CheckBox
+                        android:id="@+id/checkbox_acceleration"
+                        android:checked="@={exportAcceleration}"
+                        android:layout_weight="1"
+                        android:text="@string/label_table_acceleration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:text="Select format:"
+                    android:labelFor="@id/select_format"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <RadioGroup
+                    android:id="@+id/select_format"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <RadioButton
+                        android:id="@+id/radio_button_csv"
+                        android:checked="true"
+                        android:layout_weight="1"
+                        android:text="CSV Document"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <RadioButton
+                        android:id="@+id/radio_button_sqlite"
+                        android:layout_weight="1"
+                        android:text="SQLite Database"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </RadioGroup>
+            </LinearLayout>
+        </LinearLayout>
+
+        <Button
+            android:enabled="@{exportHeartRate || exportAcceleration}"
+            android:id="@+id/btn_export"
+            android:text="@string/btn_export"
+            android:layout_alignParentBottom="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </RelativeLayout>
+
+</layout>

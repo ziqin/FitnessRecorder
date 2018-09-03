@@ -9,7 +9,7 @@ public final class FitnessDbHelper extends SQLiteOpenHelper {
 
     private static final String TAG = FitnessDbHelper.class.getSimpleName();
 
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     public static final String DB_NAME = "fitness_data.db";
 
     public FitnessDbHelper(Context context) {
@@ -19,6 +19,7 @@ public final class FitnessDbHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         createHeartRateDb(db);
+        createAccelerationDb(db);
     }
 
     @Override
@@ -37,11 +38,13 @@ public final class FitnessDbHelper extends SQLiteOpenHelper {
 
     private static void createAccelerationDb(SQLiteDatabase db) {
         final String ddl = String.format("create table %s (" +
-                "%s datetime primary key default current_timestamp, " +
+                "%s integer primary key autoincrement, " +
+                "%s datetime not null default current_timestamp, " +
                 "%s real not null, " +
                 "%s real not null, " +
                 "%s real not null);",
                 FitnessDbSchema.AccelerationTable.NAME,
+                FitnessDbSchema.AccelerationTable.Cols.id,
                 FitnessDbSchema.AccelerationTable.Cols.timestamp,
                 FitnessDbSchema.AccelerationTable.Cols.x,
                 FitnessDbSchema.AccelerationTable.Cols.y,
