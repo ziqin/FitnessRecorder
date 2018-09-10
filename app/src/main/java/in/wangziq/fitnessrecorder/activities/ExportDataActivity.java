@@ -59,6 +59,7 @@ public final class ExportDataActivity extends AppCompatActivity {
     }
 
 
+    // FIXME: sync -> async
     private void export() {
         String filenamePrefix = "exported_" + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         if (mBinding.radioButtonCsv.isChecked()) {
@@ -82,6 +83,7 @@ public final class ExportDataActivity extends AppCompatActivity {
                 });
                 Log.i(TAG, "exported: " + filename);
             }
+            Snackbar.make(getRootView(), R.string.toast_export_succeed, Snackbar.LENGTH_SHORT).show();
         } else if (mBinding.radioButtonSqlite.isChecked()) {
             saveDbFile(new File(mAppDir, filenamePrefix + "_all.db"));
         }
@@ -97,7 +99,6 @@ public final class ExportDataActivity extends AppCompatActivity {
             csvWriter.close();
             cursor.close();
             Log.i(TAG, "saveCsvFile: succeeded");
-            Snackbar.make(getRootView(), R.string.toast_export_succeed, Snackbar.LENGTH_SHORT).show();
         } catch (IOException e) {
             Log.e(TAG, "saveCsvFile: failed", e);
         } catch (Exception e) {
